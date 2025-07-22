@@ -21,7 +21,7 @@ The following configuration files are located inside the `config` folder :
 - `config_morphometrics.yaml` : configuration file to process morphometrics
 - `config_rootlets.yaml` : configuration file to process spinal rootlets
 
-These configuration files make it possible to use a different list of subjects for both the morphometrics and rootlets processing. 
+These configuration files make it possible to use a different list of subjects for each processing step. 
 
 Before running the scripts, you will first need to add the following paths to these configuration files: 
 - `path_data` : the path to your local copy of the dataset
