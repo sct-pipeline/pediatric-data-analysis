@@ -21,7 +21,7 @@ SUBJECT=$1
 
 echo "Running subject: ${SUBJECT}"
 echo "Using data path: ${PATH_DATA}"
-echo "Using output path: ${PATH_OUTPUT}"
+echo "Using output path: ${PATH_RESULTS}"
 
 # Check for required vars
 if [[ -z "${SUBJECT}" ]]; then
@@ -51,9 +51,9 @@ else
 fi
 
 # Run rootlets.py
-python "scripts/extract_metrics/morphometrics.py" \
+python "scripts/analysis/morphometrics.py" \
     --subject "${SUBJECT}" \
     --data-path "${PATH_DATA}" \
-    --output-path "${PATH_OUTPUT}" \
+    --path-output "${PATH_RESULTS}" \
     --subject-dir "${SUBJECT_DIR}" \
     --file-t2 "${T2_FILE}" \
