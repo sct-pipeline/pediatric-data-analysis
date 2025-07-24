@@ -13,6 +13,7 @@ set -e  # Exit if any command fails
 
 # Variables provided by sct_run_batch:
 # - PATH_DATA
+# - PATH_OUTPUT
 # - SUBJECT
 
 # Get subject
@@ -20,6 +21,7 @@ SUBJECT=$1
 
 echo "Running subject: ${SUBJECT}"
 echo "Using data path: ${PATH_DATA}"
+echo "Using output path: ${PATH_OUTPUT}"
 
 # Check for required vars
 if [[ -z "${SUBJECT}" ]]; then
@@ -52,5 +54,6 @@ fi
 python "scripts/extract_metrics/morphometrics.py" \
     --subject "${SUBJECT}" \
     --data-path "${PATH_DATA}" \
+    --output-path "${PATH_OUTPUT}" \
     --subject-dir "${SUBJECT_DIR}" \
     --file-t2 "${T2_FILE}" \

@@ -16,17 +16,17 @@ To run the scripts in this repository, you will need the following installed or 
 
 ### 1. Modify the contents of the configuration files
 
-The following configuration files are located inside the `config` folder :
-- `config_preprocessing.yaml` : configuration file to perform data preprocessing
+To execute the scripts in this repo, you will need the following configuration files, located inside the `config` folder :
 - `config_morphometrics.yaml` : configuration file to process morphometrics
 - `config_rootlets.yaml` : configuration file to process spinal rootlets
 
-These configuration files make it possible to use a different list of subjects for each processing step. 
+Templates versions of these configuration files are provided in the `config` folder, with a `_template` suffix. Before running the scripts, rename each config file by removing the `_template` suffix. Inside each configuration file, you will need to set the following parameters:
 
-Before running the scripts, you will first need to add the following paths to these configuration files: 
 - `path_data` : the path to your local copy of the dataset
+- `path_output` : the path to where you want the output results saved
 - `jobs` : the number of cores you want to use to run subjects in parallel
 - `script_args` : the path to your local clone of the [spinal cord rootlet segmentation model (r20250318)](https://github.com/ivadomed/model-spinal-rootlets)
+- `include_list`: the list of subjects you want to process
 
 ### 2. Activate SCT's virtual environment and change directory
 To run the scripts in this repository, you first need to activate the Spinal Cord Toolbox (SCT) virtual environment named venv_sct. You can activate it with the following command:
