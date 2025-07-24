@@ -1,0 +1,14 @@
+# Configuration file for the spinal rootlets analysis.
+# This file contains the necessary parameters for running the `sct_run_batch` command
+
+# Path to the raw pediatric dataset
+path_data: 
+
+# Number of parallel jobs (-1 uses all CPU cores minus one)
+jobs: -1
+
+# This custom argument corresponds to the path to your local clone of the rootlets model
+script_args: 
+
+# List of subjects to include for the rootlets analysis
+include_list: 

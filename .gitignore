@@ -1,0 +1,7 @@
+# Ignore config files containing local paths
+config/config_morphometrics.yaml 
+config/config_rootlets.yaml 
+
+# Allow config templates
+!config/config_morphometrics_template.yaml
+!config/config_rootlets_template.yaml
