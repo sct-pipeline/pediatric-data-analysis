@@ -55,7 +55,7 @@ sct_run_batch -config config/config_preprocessing.yaml -script scripts/preproces
 
 ### 4. Extract morphometrics
 
-The script `morphometrics.py` (inside `scripts/extract_metrics`) allows to :
+The script `morphometrics.py` (inside `scripts/analysis`) allows to :
 - Get the labeled segmentation from the disc labels (using [`sct_label_vertebrae`](https://spinalcordtoolbox.com/stable/user_section/tutorials/vertebral-labeling/sct_label_vertebrae.html))
 - Run sct_process_segmentation to compute spinal cord morphometrics (cross-sectional area, diameter, etc.)
 
@@ -66,7 +66,7 @@ sct_run_batch -config config/config.yaml -script wrappers/wrapper_morphometrics.
 
 ### 5. Process rootlets
 
-The script `rootlets.py` (inside `scripts/extract_metrics`) :
+The script `rootlets.py` (inside `scripts/analysis`) :
 - Runs `zeroing_false_positive_rootlets.py` from the model-spinal-rootlets/pediatric_rootlets directory to remove false positive rootlets below the Th1 level.
 - Runs `02a_rootlets_to_spinal_levels.py` from the model-spinal-rootlets/inter-rater_variability directory to extract spinal levels from the rootlets segmentation
 - Extracts the center of mass of each spinal level and saves it in a CSV file
