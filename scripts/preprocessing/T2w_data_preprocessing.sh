@@ -3,14 +3,14 @@
 # This script was modified from https://github.com/ivadomed/model-spinal-rootlets/blob/main/pediatric_rootlets/pediatric_rootlets.sh
 # Original authors : Katerina Krejci, Jan Valosek
 #
-# This version of the script performs the following preprocessing steps on the data:
-# - Segmentation of spinal cord from T2w data (sct_deepseg_sc)
-# - Detection of PMJ from T2w data (sct_detect_pmj)
-# - Labeling of vertebral levels from T2w data (sct_label_vertebrae)
-# - Segmentation of rootlets from T2w data (model-spinal-rootlets_ventral_D106_r20250318)
+# This version of the script performs the following preprocessing steps on the T2w data of the philadelphia-pediatric dataset:
+# - Segmentation of spinal cord (sct_deepseg_sc)
+# - Detection of PMJ (sct_detect_pmj)
+# - Labeling of vertebral levels (sct_label_vertebrae)
+# - Segmentation of rootlets (model-spinal-rootlets_ventral_D106_r20250318)
 #
-# The script can be run across multiple subjects using `sct_run_batch`` by the following command:
-# sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script pediatric_rootlets.sh
+# The script can be run across multiple subjects using `sct_run_batch` by the following command:
+#   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script pediatric_rootlets.sh
 # 
 # It is also possible to add an exclude.yml file to exclude certain subjects from the batch processing. 
 # To do so, the argument '-exclude' can be added to the command above, followed by the path to the exclude.yml file.
