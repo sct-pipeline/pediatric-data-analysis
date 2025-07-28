@@ -46,7 +46,7 @@ start=`date +%s`
 # Generate the mean DWI image if it does not exist
 generate_mean_DWI(){
   # Inputs 
-  DWI_DATA_FOLDER="${PATH_DATA}/${SUBJECT}/dwi/"
+  DWI_DATA_FOLDER="${PATH_DATA}/${SUBJECT}/dwi"
   DWI_FILE=${DWI_DATA_FOLDER}/${file_dwi}
   # Outputs 
   MEAN_DWI_FILE="${file_dwi}_mean.nii.gz"
@@ -111,6 +111,40 @@ motion_correction(){
   fi
 }
 
+# Register T2w data to PAM50
+register_T2w_to_PAM50(){
+  T2w_DATA_FOLDER="${PATH_DATA}/${SUBJECT}/anat/"
+  T2_FILE=${T2w_DATA_FOLDER}/${file_t2}
+  SEG_FILE="${file_t2}_label-SC_mask"
+  SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
+  VERTLABEL_FILE="${file_t2}_label-SC_mask_labeled_discs"
+  VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
+  
+  if [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/template2anat.nii.gz" ]]; then
+    echo "Found registration files. Skipping."
+  else
+    echo "Not found. Performing registration of T2w with PAM50 template"
+    sct_register_to_template -i ${T2_FILE}.nii.gz -s ${SEG_PATH} -l ${VERTLABEL_PATH} -c t2 -o ${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/ -qc ${QC_PATH} 
+  fi
+}
+
+compute_DTI(){
+  # Inputs 
+  DWI_DATA_FOLDER="${PATH_DATA}/${SUBJECT}/dwi/"
+  DWI_FILE=${DWI_DATA_FOLDER}/${file_dwi}
+  # Outputs
+  DTI_DATA_FOLDER="${PATH_DERIVATIVES}/DTI/${SUBJECT}/"
+  echo "Looking for DTI files"
+  if [[ -e "${DTI_DATA_FOLDER}/FA.nii.gz" ]]; then
+    echo "Found DTI files in $DTI_DATA_FOLDER."
+  else
+    echo "Not found. Computing DTI metrics."
+    mkdir -p "${DTI_DATA_FOLDER}"
+    sct_dmri_compute_dti -i ${DWI_FILE}.nii.gz -bval ${DWI_FILE}.bval -bvec ${DWI_FILE}.bvec -o ${DTI_DATA_FOLDER}
+  fi
+}
+
+
 # SCRIPT STARTS HERE
 # ==============================================================================
 # Display useful info for the log, such as SCT version, RAM and CPU cores available
@@ -129,6 +163,24 @@ elif [[ -e "${PATH_DATA}/${SUBJECT}/dwi/${SUBJECT}_run-2_dwi.nii.gz" ]]; then
   file_dwi=${SUBJECT}_run-2_dwi
 fi
 
+# Define the names of the T2w files
+file_t2_composed=${SUBJECT}_rec-composed_T2w
+file_t2_top=${SUBJECT}_acq-top_run-1_T2w
+
+# Check if file_t2_composed exists
+if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2_composed}.nii.gz" ]]; then
+    file_t2=${file_t2_composed}
+else
+    # Check if file_t2_top exists
+    if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2_top}.nii.gz" ]]; then
+        file_t2=${file_t2_top}
+        echo "Composed T2w file not found. Proceeding with top T2w file."
+    else
+        echo "Neither composed nor top T2w file found for subject ${SUBJECT}. Skipping."
+        continue  # Skip to the next subject
+    fi
+fi
+
 # Generate the mean DWI image 
 echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
 generate_mean_DWI ${file_dwi}
@@ -141,17 +193,21 @@ segment_spinal_cord ${file_dwi}
 echo "------------------ Creating spinal cord mask for ${SUBJECT} ------------------ "
 create_mask ${file_dwi}
 
-# Perform motion correction
-echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
-motion_correction ${file_dwi}
+# # Perform motion correction
+# echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
+# motion_correction ${file_dwi}
 
-# # Compute DTI metrics 
-# echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-# compute_DTI ${file_dwi}
+# Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
+echo "------------------ Registration of T2w data with PAM50 template ${SUBJECT} ------------------ "
+register_T2w_to_PAM50 ${file_t2}.nii.gz
 
-# # Perform registration to and from the PAM50 template
+# Perform registration of dwi data to and from the PAM50 template
 # echo "------------------ Registration of DWI data with PAM50 template ${SUBJECT} ------------------ "
 # registration_with_PAM50 ${file_dwi}.nii.gz
+
+# Compute DTI metrics 
+# echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
+# compute_DTI ${file_dwi}
 
 # # Extract DTI metrics 
 # echo "------------------ Extracting DTI metrics for ${SUBJECT} using the PAM50 atlas ------------------ "
