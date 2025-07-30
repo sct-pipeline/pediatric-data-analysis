@@ -237,13 +237,6 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         '-sex', 'M'
     ], check=True)
 
-    # Generate figure center of mass
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "generate_figure_center_of_mass.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-participants", participants_tsv
-    ], check=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run rootlets processing for one subject")
