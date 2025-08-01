@@ -3,7 +3,7 @@ config/config_morphometrics.yaml
 config/config_rootlets.yaml 
 
 # Ignore SCT output folders (log files, etc.)
-output/output_dwi
+output/
 
 # Allow config templates
 !config/config_morphometrics_template.yaml
