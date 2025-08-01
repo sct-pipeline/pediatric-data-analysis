@@ -33,6 +33,9 @@ SUBJECT=$1
 # Define path to derivatives according to the data path 
 PATH_DERIVATIVES=${PATH_DATA}/derivatives
 
+# Path to QC
+QC_PATH=${PATH_DERIVATIVES}/QC/QC_DWI/SCT_QC_Report_T2w
+
 # get starting time:
 start=`date +%s`
 
@@ -43,7 +46,6 @@ start=`date +%s`
 segment_sc_if_does_not_exist(){
   SEG_FILE="${file_t2}_label-SC_mask"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
-  QC_PATH="${PATH_DERIVATIVES}/labels/qc"
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $SEG_PATH ]]; then
     echo "Found! Using manual segmentation."
@@ -59,15 +61,15 @@ segment_sc_if_does_not_exist(){
 detect_pmj_if_does_not_exist(){
   PMJ_FILE="${file_t2}_label-PMJ_dlabel"
   PMJ_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${PMJ_FILE}.nii.gz"
-  QC_PATH="${PATH_DERIVATIVES}/labels/qc"
+  SEG_FILE="${file_t2}_label-SC_mask"
+  SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
   echo "Looking for manual PMJ detection: $PMJ_PATH"
   if [[ -e $PMJ_PATH ]]; then
     echo "Found! Using manual PMJ detection."
     rsync -avzh "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/"
-    sct_detect_pmj -i ${file_t2}.nii.gz -s ${SEG_PATH}.nii.gz -c t2 -o ${PMJ_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
   else
     echo "Not found. Proceeding with automatic PMJ detection."
-    sct_detect_pmj -i ${file_t2}.nii.gz -s ${SEG_PATH}.nii.gz -c t2 -o ${PMJ_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
+    sct_detect_pmj -i ${file_t2}.nii.gz -s ${SEG_PATH} -c t2 -o ${PMJ_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
   fi
 }
 
@@ -76,16 +78,9 @@ label_if_does_not_exist(){
   # Update global variable with segmentation file name
   VERTLABEL_FILE="${file_t2}_labels-disc"
   VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
-  QC_PATH="${PATH_DERIVATIVES}/labels/qc"
   echo "Looking for manual label: $VERTLABEL_PATH"
-  if [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SUBJECT}_rec-composed_T2w_labels-disc_step2_output.nii.gz" ]]; then
+  if [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2}_labels-disc_step2_output.nii.gz" ]]; then
     echo "Found vertebral labels!"
-  elif [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SUBJECT}_rec-composed_run-1_T2w_labels-disc_step2_output.nii.gz" ]]; then
-    echo "Found vertebral labels for top acquisition! "
-  elif [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SUBJECT}_acq-top_T2w_labels-disc_step2_output.nii.gz" ]]; then
-    echo "Found vertebral labels for top acquisition! "
-  elif [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SUBJECT}_acq-top_run-1_T2w_labels-disc_step2_output.nii.gz" ]]; then
-    echo "Found vertebral labels for top acquisition! "
   else
     echo "Manual intervertebral discs not found. Proceeding with automatic labeling."
     # Generate vertebral labeling using the totalspineseg model
@@ -93,11 +88,32 @@ label_if_does_not_exist(){
   fi
 }
 
+# Label the SC mask if it does not exist (using the vertebral level labels)
+label_SC_mask_if_does_not_exist(){
+  
+  # Input
+  SEG_FILE="${file_t2}_label-SC_mask"
+  SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
+  VERTLABEL_FILE="${file_t2}_labels-disc_step1_levels"
+  VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
+  
+  # Output
+  OFOLDER="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat"
+  T2_LABEL_SEG="${OFOLDER}/${file_t2}_label-SC_mask_labeled.nii.gz"
+
+  if [[ -e "${T2_LABEL_SEG}" ]]; then
+    echo "Found labeled segmentation."
+  else
+    echo "Labeled segmentation not found. Proceeding with sct_label_vertebrae."
+    sct_label_vertebrae -i ${file_t2}.nii.gz -s ${SEG_PATH} -c t2 -discfile ${VERTLABEL_PATH} -ofolder ${OFOLDER}
+  fi
+}
+
+
 # Extract centerline if does not exist
 extract_centerline_if_does_not_exist(){
   CENTERLINE_FILE="${file_t2}_centerline"
   CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
-  QC_PATH="${PATH_DERIVATIVES}/labels/qc"
   echo "Looking for centerline: $PMJ_PATH"
   if [[ -e $PMJ_PATH ]]; then
     echo "Found! Using centerline."
@@ -112,7 +128,6 @@ extract_centerline_if_does_not_exist(){
 segment_rootlets_if_does_not_exist(){
   ROOTLETSEG_FILE="${file_t2}_label-dorsal_rootlets_dseg"
   ROOTLETSEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${ROOTLETSEG_FILE}.nii.gz"
-  QC_PATH="${PATH_DERIVATIVES}/labels/qc"
   echo "Looking for rootlets segmentation: $SEG_PATH"
   if [[ -e $SEG_PATH ]]; then
     echo "Found! Using rootlets segmentation."
@@ -143,43 +158,62 @@ cd ${SUBJECT}/anat
 file_t2_composed=${SUBJECT}_rec-composed_T2w
 file_t2_top=${SUBJECT}_acq-top_run-1_T2w
 
-# Check if file_t2_composed exists
+T2_FILES=()
+
+# Check if rec-composed T2w file exists
 if [ -f ${file_t2_composed}.nii.gz ]; then
-    file_t2=${file_t2_composed}
+  T2_FILES+=("${file_t2_composed}")
+  echo "Composed T2w file found. Proceeding with processing for rec-composed T2w file."
 else
-    # Check if file_t2_top exists
-    if [ -f ${file_t2_top}.nii.gz ]; then
-        file_t2=${file_t2_top}
-        echo "Composed T2w file not found. Proceeding with top T2w file."
-    else
-        echo "Neither composed nor top T2w file found for subject ${SUBJECT}. Skipping."
-        continue  # Skip to the next subject
-    fi
+    echo "Composed T2w file not found. Skipping."
 fi
-  
-# Segment spinal cord (only if it does not exist)
-echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-segment_sc_if_does_not_exist ${file_t2}.nii.gz
 
-# Run totalspineseg for vertebral labeling
-echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
-label_if_does_not_exist ${file_t2}.nii.gz
+# Check if acq-top T2w file exists
+if [ -f ${file_t2_top}.nii.gz ]; then
+  T2_FILES+=("${file_t2_top}")
+  echo "Top T2w file found. Proceeding with processing for acq-top T2w file."
+else
+  echo "acq-top T2w file not found. Skipping."
+fi
 
-# Project the intervertebral disc labels to the spinal cord centerline
-echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
-sct_label_utils -i ${FILESEG}.nii.gz -o ${FILELABEL}_centerline.nii.gz -project-centerline ${FILELABEL}.nii.gz -qc ${PATH_QC} -qc-subject ${SUBJECT}
+echo ${T2_FILES}
 
-# Detect PMJ (only if it does not exist)
-echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
-detect_pmj_if_does_not_exist ${file_t2}.nii.gz
+# Process T2 files (both rec-composed and acq-top)
+for file_t2 in ${T2_FILES[@]}; do
 
-# Extract centerline (only if it does not exist)
-echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
-extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+  # Segment spinal cord (only if it does not exist)
+  # echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
+  # segment_sc_if_does_not_exist ${file_t2}.nii.gz
 
-# Segment rootlets (only if it does not exist)
-echo "Segmenting rootlets for ${SUBJECT}..."
-segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
+  # Run totalspineseg for vertebral labeling
+  # echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
+  # label_if_does_not_exist ${file_t2}.nii.gz
+
+  # Generate the labeled segmentation (with the vertebral disc labels)
+  echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
+  label_SC_mask_if_does_not_exist ${file_t2}.nii.gz
+
+  # Project the intervertebral disc labels to the spinal cord centerline
+  # echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
+  # VERTLABEL_FILE="${file_t2}_labels-disc"
+  # VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
+  # CENTERLINE_FILE="${file_t2}_centerline"
+  # CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
+  # sct_label_utils -i ${VERTLABEL_PATH}.nii.gz -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
+
+  # Detect PMJ (only if it does not exist)
+  # echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
+  # detect_pmj_if_does_not_exist ${file_t2}.nii.gz
+
+  # # Extract centerline (only if it does not exist)
+  # echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
+  # extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+
+  # # Segment rootlets (only if it does not exist)
+  # echo "Segmenting rootlets for ${SUBJECT}..."
+  # segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
+
+done
 
 # Display useful info for the log
 end=`date +%s`

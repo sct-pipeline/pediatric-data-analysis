@@ -190,7 +190,7 @@ def compute_interpolated_morphometrics(data_path, output_csv_path, output_csv_fi
         all_results.append(temp_df[['subject', 'VertLevel', 'DistancePMJ', 'CSA', 'AP_diameter', 'RL_diameter', 'eccentricity', 'solidity']])
         print(f"Processed VertLevel {level} (PMJ distance : {distance_pmj})")
 
-    # Save all resuts to a final CSV file
+    # Save all results to a final CSV file
     final_results_df = pd.concat(all_results, ignore_index=True)
     
     # Add age and sex columns to the final CSV file
@@ -237,20 +237,7 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
 
     ########## FOR VERTEBRAL LEVELS ##########
 
-    # 1. Label spinal cord with vertebral discs
-    if os.path.exists(t2w_labeled_seg):
-        print(f"SC mask already labeled: {os.path.basename(t2w_labeled_seg)}")
-    else:
-        print("Labeling SC mask...")
-        sct_label_vertebrae.main([
-            '-i', t2w_file,
-            '-s', t2w_seg_file,
-            '-c', 't2',
-            '-discfile', t2w_disc_labels,
-            '-ofolder', subject_dir
-        ])
-
-    # 2. Compute morphometrics per slice and per level
+    # 1. Compute morphometrics per slice and per level
     compute_morphometrics(
         level_type = 'VertLevel',
         output_csv_filename=os.path.join(output_csv_dir, f"{subject}_vert_level_morphometrics.csv"),
@@ -263,7 +250,7 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
         pmj=t2w_pmj_label
     )
 
-    # 3. Interpolate PMJ distances for each Vertebral Level 
+    # 2. Interpolate PMJ distances for each Vertebral Level 
     compute_interpolated_morphometrics(data_path, 
                                        path_output,
                                        output_csv_filename=os.path.join(output_csv_dir, f"{subject}_vert_level_morphometrics.csv"), 
