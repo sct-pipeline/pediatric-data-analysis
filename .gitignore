@@ -8,3 +8,6 @@ output/
 # Allow config templates
 !config/config_morphometrics_template.yaml
 !config/config_rootlets_template.yaml
+
+# Ignore results folder
+results/
