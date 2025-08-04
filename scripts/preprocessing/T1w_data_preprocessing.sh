@@ -1,17 +1,14 @@
 #!/bin/bash
 #
-# This script was modified from https://github.com/ivadomed/model-spinal-rootlets/blob/main/pediatric_rootlets/pediatric_rootlets.sh
-# Original authors : Katerina Krejci, Jan Valosek
-#
 # This version of the script performs the following preprocessing steps on the T1w data of the philadelphia-pediatric dataset:
 # - Segmentation of spinal cord (sct_deepseg_sc)
 # - Labeling of vertebral levels (totalspineseg via sct_deepseg)
 # - Labeling of the SC segmentation mask (sct_label_vertebrae)
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
-#   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script pediatric_rootlets.sh
+#   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script T1w_data_preprocessing.sh
 # 
-# It is also possible to add an exclude.yml file to exclude certain subjects from the batch processing. 
+# It is also possible to add an `exclude.yml` file to exclude certain subjects from the batch processing. 
 # To do so, the argument '-exclude' can be added to the command above, followed by the path to the exclude.yml file.
 # 
 # Author: Samuelle St-Onge
