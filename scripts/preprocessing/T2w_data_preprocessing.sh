@@ -6,8 +6,9 @@
 # This version of the script performs the following preprocessing steps on the T2w data of the philadelphia-pediatric dataset:
 # - Segmentation of spinal cord (sct_deepseg_sc)
 # - Detection of PMJ (sct_detect_pmj)
-# - Labeling of vertebral levels (sct_label_vertebrae)
-# - Segmentation of rootlets (model-spinal-rootlets_ventral_D106_r20250318)
+# - Labeling of vertebral levels (totalspineseg via sct_deepseg)
+# - Labeling of the SC segmentation mask (sct_label_vertebrae)
+# - Segmentation of spinal rootlets (model-spinal-rootlets_ventral_D106_r20250318)
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
 #   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script pediatric_rootlets.sh
