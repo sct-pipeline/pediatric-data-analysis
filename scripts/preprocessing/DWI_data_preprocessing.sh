@@ -103,6 +103,7 @@ motion_correction(){
   DWI_DATA_FOLDER="${PATH_DATA}/${SUBJECT}/dwi/"
   DWI_FILE=${DWI_DATA_FOLDER}/${file_dwi}
   MASK_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${file_dwi}_mask_dmri_dwi_mean.nii.gz"
+  SEG_FILE="${file_dwi}_label-SC_mask.nii.gz"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${SEG_FILE}"
   # Outputs
   MOCO_DWI_PATH="${PATH_DERIVATIVES}/motion_correction/${SUBJECT}/dwi/"
@@ -112,7 +113,7 @@ motion_correction(){
   else
     echo "Not found. Proceeding with sct_deepseg spinalcord."
     # Perform motion correction
-    sct_dmri_moco -i ${DWI_FILE}.nii.gz -m ${MASK_FILE} -bvec ${DWI_FILE}.bvec -qc ${QC_PATH} -qc-seg ${SEG_PATH} -o ${MOCO_DWI_PATH}
+    sct_dmri_moco -i ${DWI_FILE}.nii.gz -bvec ${DWI_FILE}.bvec -bval ${DWI_FILE}.bval -qc ${QC_PATH} -qc-seg ${SEG_PATH} -o ${MOCO_DWI_PATH}
   fi
 }
 
@@ -148,7 +149,7 @@ segment_moco_spinal_cord(){
   if [[ -e $MOCO_SEG_PATH ]]; then
     echo "Found! Using $MOCO_SEG_FILE as the segmentation."
   else
-    echo "Not found. Proceeding with sct_deepseg spinalcord."
+    echo "Not found. Proceeding with motion correction."
     # Segment motion-corrected spinal cord using the contrast-agnostic model from sct_deepseg
     sct_deepseg spinalcord -i ${MEAN_MOCO_DWI_FILE} -c dwi -qc ${QC_PATH} -qc-subject ${SUBJECT} -o ${MOCO_SEG_PATH}
   fi
@@ -268,13 +269,7 @@ extract_DTI_metrics(){
 # Display useful info for the log, such as SCT version, RAM and CPU cores available
 sct_check_dependencies -short
 
-# Go to folder where data will be copied and processed
-cd $PATH_DERIVATIVES
-
-# Go to anat folder where DWI data are located
-cd ${SUBJECT}/dwi
-
-# Define the suffix for the DWI files (with `run-1` or `run-2``)
+# Define the suffix for the DWI files (with `run-1` or `run-2`)
 if [[ -e "${PATH_DATA}/${SUBJECT}/dwi/${SUBJECT}_run-1_dwi.nii.gz" ]]; then
   file_dwi=${SUBJECT}_run-1_dwi
 elif [[ -e "${PATH_DATA}/${SUBJECT}/dwi/${SUBJECT}_run-2_dwi.nii.gz" ]]; then
