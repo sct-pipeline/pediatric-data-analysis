@@ -11,7 +11,7 @@
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
 #   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script DWI_data_preprocessing.sh
 # 
-# It is also possible to add an exclude.yml file to exclude certain subjects from the batch processing. 
+# It is also possible to add an `exclude.yml` file to exclude certain subjects from the batch processing. 
 # To do so, the argument '-exclude' can be added to the command above, followed by the path to the exclude.yml file.
 # 
 # Author: Samuelle St-Onge
@@ -269,10 +269,10 @@ extract_DTI_metrics(){
 sct_check_dependencies -short
 
 # Go to folder where data will be copied and processed
-# cd $PATH_DERIVATIVES
+cd $PATH_DERIVATIVES
 
 # Go to anat folder where DWI data are located
-# cd ${SUBJECT}/dwi
+cd ${SUBJECT}/dwi
 
 # Define the suffix for the DWI files (with `run-1` or `run-2``)
 if [[ -e "${PATH_DATA}/${SUBJECT}/dwi/${SUBJECT}_run-1_dwi.nii.gz" ]]; then
@@ -282,58 +282,58 @@ elif [[ -e "${PATH_DATA}/${SUBJECT}/dwi/${SUBJECT}_run-2_dwi.nii.gz" ]]; then
 fi
 
 # Generate the mean DWI image 
-# echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
-# generate_mean_DWI ${file_dwi}
+echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
+generate_mean_DWI ${file_dwi}
 
 # Segment spinal cord
-# echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-# segment_spinal_cord ${file_dwi}
+echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
+segment_spinal_cord ${file_dwi}
 
 # Create mask around the spinal cord for motion correction 
-# echo "------------------ Creating spinal cord mask for ${SUBJECT} ------------------ "
-# create_mask ${file_dwi}
+echo "------------------ Creating spinal cord mask for ${SUBJECT} ------------------ "
+create_mask ${file_dwi}
 
 # Perform motion correction
-# echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
-# motion_correction ${file_dwi}
+echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
+motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
-# echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-# compute_DTI ${file_dwi}
+echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
+compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
-# echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-# segment_moco_spinal_cord ${file_dwi}
+echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
+segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
-# echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
+echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
 
-# # Define the name of the acq-top T2w file
-# file_t2=${SUBJECT}_acq-top_run-1_T2w
+# Define the name of the acq-top T2w file
+file_t2=${SUBJECT}_acq-top_run-1_T2w
 
-# # Define the name of the acq-top T1w file
-# file_t1=${SUBJECT}_acq-top_run-1_T1w
+# Define the name of the acq-top T1w file
+file_t1=${SUBJECT}_acq-top_run-1_T1w
 
-# # Check if file_t2_top exists
-# if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
-#   echo "Proceeding registration to PAM50 with top T2w file."
-#   register_T2w_to_PAM50 ${file_t2}.nii.gz
+# Check if file_t2_top exists
+if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
+  echo "Proceeding registration to PAM50 with top T2w file."
+  register_T2w_to_PAM50 ${file_t2}.nii.gz
 
-# # If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
-# elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
-#   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-#   register_T1w_to_PAM50 ${file_t1}.nii.gz
+# If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
+elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
+  echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
+  register_T1w_to_PAM50 ${file_t1}.nii.gz
 
-# # Skip subject if no top T1w or T2w file found. 
-# else
-#   echo "No top T2w or T1w file found for subject ${SUBJECT}. Skipping."
-#   continue  # Skip to the next subject
+# Skip subject if no top T1w or T2w file found. 
+else
+  echo "No top T2w or T1w file found for subject ${SUBJECT}. Skipping."
+  continue  # Skip to the next subject
 
-# fi
+fi
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
-# echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
-# register_DWI_to_PAM50 ${file_dwi}.nii.gz
+echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
+register_DWI_to_PAM50 ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
 echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
