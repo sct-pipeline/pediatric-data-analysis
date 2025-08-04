@@ -242,6 +242,26 @@ register_DWI_to_PAM50(){
   fi
 }
 
+# Extract DTI metrics using the PAM50 atlas
+extract_DTI_metrics(){
+
+  # Define output directory to save extracted metrics
+  REPO_ROOT=$(git rev-parse --show-toplevel)
+  mkdir -p "${REPO_ROOT}/results/DTI_metrics/"
+
+  # Extract each DTI metric and save in a CSV file
+  for DTI_metric in FA MD RD AD; do
+    sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
+                      -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
+                      -l 1,2,3,4,34,35,50,51,52,53,54,55 \
+                      -vert 2:5 \
+                      -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
+                      -perlevel 1 \
+                      -method wa \
+                      -append 1 \
+                      -o "${REPO_ROOT}/results/DTI_metrics/${DTI_metric}_C2-C5.csv"
+  done
+}
 
 # SCRIPT STARTS HERE
 # ==============================================================================
@@ -278,42 +298,46 @@ fi
 # motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
-echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-compute_DTI ${file_dwi}
+# echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
+# compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
-echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-segment_moco_spinal_cord ${file_dwi}
+# echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
+# segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
-echo "------------------ Registration of T2w data with PAM50 template ${SUBJECT} ------------------ "
+# echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
 
-# Define the name of the acq-top T2w file
-file_t2=${SUBJECT}_acq-top_run-1_T2w
+# # Define the name of the acq-top T2w file
+# file_t2=${SUBJECT}_acq-top_run-1_T2w
 
-# Define the name of the acq-top T1w file
-file_t1=${SUBJECT}_acq-top_run-1_T1w
+# # Define the name of the acq-top T1w file
+# file_t1=${SUBJECT}_acq-top_run-1_T1w
 
-# Check if file_t2_top exists
-if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
-  echo "Proceeding registration to PAM50 with top T2w file."
-  register_T2w_to_PAM50 ${file_t2}.nii.gz
+# # Check if file_t2_top exists
+# if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
+#   echo "Proceeding registration to PAM50 with top T2w file."
+#   register_T2w_to_PAM50 ${file_t2}.nii.gz
 
-# If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
-elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
-  echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-  register_T1w_to_PAM50 ${file_t1}.nii.gz
+# # If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
+# elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
+#   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
+#   register_T1w_to_PAM50 ${file_t1}.nii.gz
 
-# Skip subject if no top T1w or T2w file found. 
-else
-  echo "No top T2w or T1w file found for subject ${SUBJECT}. Skipping."
-  continue  # Skip to the next subject
+# # Skip subject if no top T1w or T2w file found. 
+# else
+#   echo "No top T2w or T1w file found for subject ${SUBJECT}. Skipping."
+#   continue  # Skip to the next subject
 
-fi
+# fi
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
-echo "------------------ Registration of DTI data with PAM50 template ${SUBJECT} ------------------ "
-register_DWI_to_PAM50 ${file_dwi}.nii.gz
+# echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
+# register_DWI_to_PAM50 ${file_dwi}.nii.gz
+
+# Extract DTI metrics using the PAM50 atlas
+echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
+extract_DTI_metrics ${file_dwi}.nii.gz
 
 # Display useful info for the log
 end=`date +%s`
