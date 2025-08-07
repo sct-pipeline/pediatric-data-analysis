@@ -82,27 +82,11 @@ segment_spinal_cord(){
   fi
 }
 
-# Generate a mask around the spinal cord for the motion correction 
-create_mask(){
-  MASK_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${file_dwi}_mask_dmri_dwi_mean.nii.gz"
-  MEAN_DWI_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${file_dwi}_dwi_mean.nii.gz"
-  SEG_FILE="${file_dwi}_label-SC_mask.nii.gz"
-  SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${SEG_FILE}"
-  echo "Looking for mask: $MASK_FILE"
-  if [[ -e $MASK_FILE ]]; then
-    echo "Found! Using $MASK_FILE as the mask."
-  else
-    echo "Not found. Proceeding with sct_create_mask."
-    sct_create_mask -i ${MEAN_DWI_FILE} -p centerline,${SEG_PATH} -size 40mm -o ${MASK_FILE}
-  fi
-}
-
 # Perform motion correction 
 motion_correction(){
   # Inputs
   DWI_DATA_FOLDER="${PATH_DATA}/${SUBJECT}/dwi/"
   DWI_FILE=${DWI_DATA_FOLDER}/${file_dwi}
-  MASK_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${file_dwi}_mask_dmri_dwi_mean.nii.gz"
   SEG_FILE="${file_dwi}_label-SC_mask.nii.gz"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/dwi/${SEG_FILE}"
   # Outputs
@@ -229,16 +213,6 @@ register_DWI_to_PAM50(){
     # Register template PAM50 to the DWI subject space (to extract metrics in the subject space with the PAM50 atlas)
     echo "Registering the PAM50 template to the DWI subject space"
     sct_warp_template -d ${MEAN_MOCO_DWI_FILE} -w ${WARP_DWI} -qc ${QC_PATH} -o "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/"
-    
-    # Registering DTI metrics to the PAM50 (to generate average DTI maps in the PAM50 space)
-    # echo "Registering the DTI metrics to the PAM50"
-    # for DTI_metric in FA MD RD AD; do
-    #   sct_apply_transfo -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
-    #                     -d "${SCT_DIR}/data/PAM50/template/PAM50_cord.nii.gz" \
-    #                     -w "${WARP_INV_DWI}" \
-    #                     -x linear \
-    #                     -o "${PATH_DERIVATIVES}/DTI/${SUBJECT}"
-    #done
   
   fi
 }
@@ -283,10 +257,6 @@ generate_mean_DWI ${file_dwi}
 # Segment spinal cord
 echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
 segment_spinal_cord ${file_dwi}
-
-# Create mask around the spinal cord for motion correction 
-echo "------------------ Creating spinal cord mask for ${SUBJECT} ------------------ "
-create_mask ${file_dwi}
 
 # Perform motion correction
 echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "

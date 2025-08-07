@@ -35,7 +35,7 @@ SUBJECT=$1
 PATH_DERIVATIVES=${PATH_DATA}/derivatives
 
 # Path to QC
-QC_PATH=${PATH_DERIVATIVES}/QC/QC_DWI/SCT_QC_Report_T2w
+QC_PATH=${PATH_DERIVATIVES}/QC/QC_T2w/SCT_QC_Report_T2w
 
 # get starting time:
 start=`date +%s`
@@ -116,7 +116,7 @@ extract_centerline_if_does_not_exist(){
   CENTERLINE_FILE="${file_t2}_centerline"
   CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
   echo "Looking for centerline: $PMJ_PATH"
-  if [[ -e $PMJ_PATH ]]; then
+  if [[ -e $CENTERLINE_PATH ]]; then
     echo "Found! Using centerline."
     rsync -avzh "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/"
   else
@@ -161,13 +161,13 @@ file_t2_top=${SUBJECT}_acq-top_run-1_T2w
 
 T2_FILES=()
 
-# Check if rec-composed T2w file exists
-if [ -f ${file_t2_composed}.nii.gz ]; then
-  T2_FILES+=("${file_t2_composed}")
-  echo "Composed T2w file found. Proceeding with processing for rec-composed T2w file."
-else
-    echo "Composed T2w file not found. Skipping."
-fi
+# # Check if rec-composed T2w file exists
+# if [ -f ${file_t2_composed}.nii.gz ]; then
+#   T2_FILES+=("${file_t2_composed}")
+#   echo "Composed T2w file found. Proceeding with processing for rec-composed T2w file."
+# else
+#     echo "Composed T2w file not found. Skipping."
+# fi
 
 # Check if acq-top T2w file exists
 if [ -f ${file_t2_top}.nii.gz ]; then
@@ -183,32 +183,32 @@ echo ${T2_FILES}
 for file_t2 in ${T2_FILES[@]}; do
 
   # Segment spinal cord (only if it does not exist)
-  # echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-  # segment_sc_if_does_not_exist ${file_t2}.nii.gz
+  echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
+  segment_sc_if_does_not_exist ${file_t2}.nii.gz
 
   # Run totalspineseg for vertebral labeling
-  # echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
-  # label_if_does_not_exist ${file_t2}.nii.gz
+  echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
+  label_if_does_not_exist ${file_t2}.nii.gz
 
   # Generate the labeled segmentation (with the vertebral disc labels)
   echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
   label_SC_mask_if_does_not_exist ${file_t2}.nii.gz
 
-  # Project the intervertebral disc labels to the spinal cord centerline
-  # echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
-  # VERTLABEL_FILE="${file_t2}_labels-disc"
-  # VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
-  # CENTERLINE_FILE="${file_t2}_centerline"
-  # CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
-  # sct_label_utils -i ${VERTLABEL_PATH}.nii.gz -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
-
-  # Detect PMJ (only if it does not exist)
-  # echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
-  # detect_pmj_if_does_not_exist ${file_t2}.nii.gz
-
   # # Extract centerline (only if it does not exist)
   # echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
   # extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+
+  # # Project the intervertebral disc labels to the spinal cord centerline
+  # echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
+  # VERTLABEL_FILE="${file_t2}_labels-disc_step1_levels"
+  # VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
+  # CENTERLINE_FILE="${file_t2}_centerline"
+  # CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
+  # sct_label_utils -i ${VERTLABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
+
+  # # Detect PMJ (only if it does not exist)
+  # echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
+  # detect_pmj_if_does_not_exist ${file_t2}.nii.gz
 
   # # Segment rootlets (only if it does not exist)
   # echo "Segmenting rootlets for ${SUBJECT}..."

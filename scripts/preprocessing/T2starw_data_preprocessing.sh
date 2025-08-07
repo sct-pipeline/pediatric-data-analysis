@@ -31,7 +31,7 @@ SUBJECT=$1
 PATH_DERIVATIVES=${PATH_DATA}/derivatives
 
 # Path to QC
-QC_PATH=${PATH_DERIVATIVES}/QC/QC_DWI/SCT_QC_Report_T2starw
+QC_PATH=${PATH_DERIVATIVES}/QC/QC_T2starw/SCT_QC_Report_T2starw
 
 # get starting time:
 start=`date +%s`
