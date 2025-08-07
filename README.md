@@ -11,6 +11,7 @@ For this project, MRI data from the [philadelphia-pediatric](https://data.neuro.
 To run the scripts in this repository, you will need the following installed or cloned on your local computer:
 - The [Spinal Cord Toolbox (SCT)](https://spinalcordtoolbox.com/), version 7.0
 - A local clone of the [spinal cord rootlet segmentation model](https://github.com/ivadomed/model-spinal-rootlets) (release [r20250318](https://github.com/ivadomed/model-spinal-rootlets/releases/tag/r20250318))
+- [`yq`](https://github.com/mikefarah/yq) (optional), to process an `exclude.yml` file to exclude subjects from the analysis
 
 ## Usage
 

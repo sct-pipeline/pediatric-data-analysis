@@ -39,6 +39,10 @@ QC_PATH=${PATH_DERIVATIVES}/QC/QC_DWI/SCT_QC_Report_DWI
 
 echo "SCT DIR : ${SCT_DIR}"
 
+# Path to `exclude.yml` file
+EXCLUDE_FILE="${PATH_DATA}/exclude.yml"
+EXCLUDE_KEY="dwi"
+
 # get starting time:
 start=`date +%s`
 
@@ -224,18 +228,26 @@ extract_DTI_metrics(){
   REPO_ROOT=$(git rev-parse --show-toplevel)
   mkdir -p "${REPO_ROOT}/results/DTI_metrics/"
 
-  # Extract each DTI metric and save in a CSV file
-  for DTI_metric in FA MD RD AD; do
-    sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
-                      -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
-                      -l 1,2,3,4,34,35,50,51,52,53,54,55 \
-                      -vert 2:5 \
-                      -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
-                      -perlevel 1 \
-                      -method wa \
-                      -append 1 \
-                      -o "${REPO_ROOT}/results/DTI_metrics/${DTI_metric}_C2-C5.csv"
-  done
+  # Check if the subject is in the exclusion list under the 'dwi' key (by checking if the entries start with '${SUBJECT}_')
+
+  yq e ".${EXCLUDE_KEY}[]" "$EXCLUDE_FILE"
+
+  if yq e ".${EXCLUDE_KEY}[]" "$EXCLUDE_FILE" | cut -d'_' -f1 | grep -qx "$SUBJECT"; then
+    echo "Skipping ${SUBJECT} (listed under ${EXCLUDE_KEY} key)"
+  else
+    # Extract each DTI metric and save in a CSV file
+    for DTI_metric in FA MD RD AD; do
+      sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
+                        -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
+                        -l 1,2,3,4,34,35,50,51,52,53,54,55 \
+                        -vert 2:5 \
+                        -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
+                        -perlevel 1 \
+                        -method wa \
+                        -append 1 \
+                        -o "${REPO_ROOT}/results/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
+    done
+  fi
 }
 
 # SCRIPT STARTS HERE
@@ -252,23 +264,23 @@ fi
 
 # Generate the mean DWI image 
 echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
-generate_mean_DWI ${file_dwi}
+# generate_mean_DWI ${file_dwi}
 
 # Segment spinal cord
 echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-segment_spinal_cord ${file_dwi}
+# segment_spinal_cord ${file_dwi}
 
 # Perform motion correction
 echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
-motion_correction ${file_dwi}
+# motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
 echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-compute_DTI ${file_dwi}
+# compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
 echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-segment_moco_spinal_cord ${file_dwi}
+# segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
 echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
@@ -282,12 +294,12 @@ file_t1=${SUBJECT}_acq-top_run-1_T1w
 # Check if file_t2_top exists
 if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
   echo "Proceeding registration to PAM50 with top T2w file."
-  register_T2w_to_PAM50 ${file_t2}.nii.gz
+  # register_T2w_to_PAM50 ${file_t2}.nii.gz
 
 # If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
 elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-  register_T1w_to_PAM50 ${file_t1}.nii.gz
+  # register_T1w_to_PAM50 ${file_t1}.nii.gz
 
 # Skip subject if no top T1w or T2w file found. 
 else
@@ -298,7 +310,7 @@ fi
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
 echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
-register_DWI_to_PAM50 ${file_dwi}.nii.gz
+# register_DWI_to_PAM50 ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
 echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
