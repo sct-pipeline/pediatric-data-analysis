@@ -4,20 +4,18 @@
 # - Generate the mean DWI image
 # - Spinal cord segmentation
 # - Motion correction 
-# - DTI metrics 
-# - Registration to PAM50 template
-# - Segmentation of rootlets (model-spinal-rootlets_ventral_D106_r20250318)
+# - Compute DTI metrics 
+# - Registration of T2w (or T1w) data to the PAM50 template (to generate initialization warping fields for DWI registration). 
+# - Registration of the PAM50 template to the DWI space
+# - Extract DTI metrics using the PAM50 atlas registered to the DWI space
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
 #   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script DWI_data_preprocessing.sh
-# 
-# It is also possible to add an `exclude.yml` file to exclude certain subjects from the batch processing. 
-# To do so, the argument '-exclude' can be added to the command above, followed by the path to the exclude.yml file.
-# 
+#
 # Author: Samuelle St-Onge
 #
 
-# Uncomment for full verbose
+# Verbose
 set -x
 
 # Immediately exit if error
@@ -229,9 +227,6 @@ extract_DTI_metrics(){
   mkdir -p "${REPO_ROOT}/results/DTI_metrics/"
 
   # Check if the subject is in the exclusion list under the 'dwi' key (by checking if the entries start with '${SUBJECT}_')
-
-  yq e ".${EXCLUDE_KEY}[]" "$EXCLUDE_FILE"
-
   if yq e ".${EXCLUDE_KEY}[]" "$EXCLUDE_FILE" | cut -d'_' -f1 | grep -qx "$SUBJECT"; then
     echo "Skipping ${SUBJECT} (listed under ${EXCLUDE_KEY} key)"
   else
@@ -264,23 +259,23 @@ fi
 
 # Generate the mean DWI image 
 echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
-# generate_mean_DWI ${file_dwi}
+generate_mean_DWI ${file_dwi}
 
 # Segment spinal cord
 echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-# segment_spinal_cord ${file_dwi}
+segment_spinal_cord ${file_dwi}
 
 # Perform motion correction
 echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
-# motion_correction ${file_dwi}
+motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
 echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-# compute_DTI ${file_dwi}
+compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
 echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-# segment_moco_spinal_cord ${file_dwi}
+segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
 echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
@@ -310,7 +305,7 @@ fi
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
 echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
-# register_DWI_to_PAM50 ${file_dwi}.nii.gz
+register_DWI_to_PAM50 ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
 echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "

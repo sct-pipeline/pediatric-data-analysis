@@ -161,13 +161,13 @@ file_t2_top=${SUBJECT}_acq-top_run-1_T2w
 
 T2_FILES=()
 
-# # Check if rec-composed T2w file exists
-# if [ -f ${file_t2_composed}.nii.gz ]; then
-#   T2_FILES+=("${file_t2_composed}")
-#   echo "Composed T2w file found. Proceeding with processing for rec-composed T2w file."
-# else
-#     echo "Composed T2w file not found. Skipping."
-# fi
+# Check if rec-composed T2w file exists
+if [ -f ${file_t2_composed}.nii.gz ]; then
+  T2_FILES+=("${file_t2_composed}")
+  echo "Composed T2w file found. Proceeding with processing for rec-composed T2w file."
+else
+    echo "Composed T2w file not found. Skipping."
+fi
 
 # Check if acq-top T2w file exists
 if [ -f ${file_t2_top}.nii.gz ]; then
@@ -194,25 +194,25 @@ for file_t2 in ${T2_FILES[@]}; do
   echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
   label_SC_mask_if_does_not_exist ${file_t2}.nii.gz
 
-  # # Extract centerline (only if it does not exist)
-  # echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
-  # extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+  # Extract centerline (only if it does not exist)
+  echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
+  extract_centerline_if_does_not_exist ${file_t2}.nii.gz
 
-  # # Project the intervertebral disc labels to the spinal cord centerline
-  # echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
-  # VERTLABEL_FILE="${file_t2}_labels-disc_step1_levels"
-  # VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
-  # CENTERLINE_FILE="${file_t2}_centerline"
-  # CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
-  # sct_label_utils -i ${VERTLABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  # Project the intervertebral disc labels to the spinal cord centerline
+  echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
+  VERTLABEL_FILE="${file_t2}_labels-disc_step1_levels"
+  VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
+  CENTERLINE_FILE="${file_t2}_centerline"
+  CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
+  sct_label_utils -i ${VERTLABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
 
-  # # Detect PMJ (only if it does not exist)
-  # echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
-  # detect_pmj_if_does_not_exist ${file_t2}.nii.gz
+  # Detect PMJ (only if it does not exist)
+  echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
+  detect_pmj_if_does_not_exist ${file_t2}.nii.gz
 
-  # # Segment rootlets (only if it does not exist)
-  # echo "Segmenting rootlets for ${SUBJECT}..."
-  # segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
+  # Segment rootlets (only if it does not exist)
+  echo "Segmenting rootlets for ${SUBJECT}..."
+  segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
 
 done
 

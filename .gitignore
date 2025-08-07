@@ -1,4 +1,5 @@
 # Ignore config files containing local paths
+config/config_preprocessing.yaml 
 config/config_morphometrics.yaml 
 config/config_rootlets.yaml 
 
@@ -6,6 +7,7 @@ config/config_rootlets.yaml
 output/
 
 # Allow config templates
+!config/config_preprocessing_template.yaml
 !config/config_morphometrics_template.yaml
 !config/config_rootlets_template.yaml
 
