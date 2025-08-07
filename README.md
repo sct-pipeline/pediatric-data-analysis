@@ -55,7 +55,7 @@ The script `T2w_data_preprocessing.sh` (inside `scripts/preprocessing`) performs
 
 In order to run the script in parallel, the `sct_run_batch` command can be used as follows :
 ```
-sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/pediatric_data_preprocessing.sh
+sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/T2w_data_preprocessing.sh
 ```
 
 ### 4. Extract morphometrics
@@ -94,5 +94,5 @@ The script `dwi_data_preprocessing.sh` (inside `scripts/preprocessing`) performs
 
 In order to run the script in parallel, the `sct_run_batch` command can be used as follows :
 ```
-sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/pediatric_data_preprocessing.sh
+sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/dwi_data_preprocessing.sh
 ```
