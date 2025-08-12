@@ -235,12 +235,13 @@ extract_DTI_metrics(){
       sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
                         -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
                         -l 1,2,3,4,34,35,50,51,52,53,54,55 \
-                        -vert 2:5 \
+                        -vert 2:6 \
                         -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
                         -perlevel 1 \
+                        -perslice 0 \
                         -method wa \
                         -append 1 \
-                        -o "${REPO_ROOT}/results/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
+                        -o "${REPO_ROOT}/results/tables/DWI/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
     done
   fi
 }

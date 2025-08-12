@@ -12,4 +12,8 @@ output/
 !config/config_rootlets_template.yaml
 
 # Ignore results folder
-results/
+results/tables/
+
+# Ignore other miscellaneous/WIP scripts
+scripts/others/
+

@@ -8,10 +8,7 @@
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
 #   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script T2starw_data_preprocessing.sh
-# 
-# It is also possible to add an `exclude.yml` file to exclude certain subjects from the batch processing. 
-# To do so, the argument '-exclude' can be added to the command above, followed by the path to the exclude.yml file.
-# 
+#
 # Author: Samuelle St-Onge
 #
 
