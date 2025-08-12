@@ -72,6 +72,22 @@ segment_gm(){
   fi
 }
 
+# Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
+get_wm_seg(){
+  # Input
+  SC_SEG_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-SC_mask.nii.gz"
+  GM_SEG_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-GM_mask.nii.gz"
+  # Output
+  WM_SEG_FILE="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-WM_mask.nii.gz"
+  echo "Looking for manual segmentation: $SEG_PATH"
+  if [[ -e $WM_SEG_FILE ]]; then
+    echo "Found WM segmentation."
+  else
+    echo "WM segmentation not found. Proceeding with automatic segmentation."
+    # Substract gray matter from spinal cord to get white matter
+    sct_maths -i ${SC_SEG_FILE} -sub ${GM_SEG_FILE} -o ${WM_SEG_FILE}
+  fi
+}
 
 # SCRIPT STARTS HERE
 # ==============================================================================
@@ -103,6 +119,9 @@ segment_sc ${file_t2star}.nii.gz
 echo "------------------ Generating the gray matter segmentation for ${SUBJECT} ------------------ "
 segment_gm ${file_t2star}.nii.gz
 
+# Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
+echo "------------------ Computing the white matter segmentation for ${SUBJECT} ------------------ "
+get_wm_seg ${file_t2star}.nii.gz
 
 # Display useful info for the log
 end=`date +%s`
