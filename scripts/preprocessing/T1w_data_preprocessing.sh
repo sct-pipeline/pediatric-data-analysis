@@ -40,7 +40,7 @@ start=`date +%s`
 
 # Segment spinal cord if it does not exist
 segment_sc_if_does_not_exist(){
-  SEG_FILE="${file_1}_label-SC_mask"
+  SEG_FILE="${file_t1}_label-SC_mask"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $SEG_PATH ]]; then
@@ -95,12 +95,12 @@ get_vertebral_levels_labels(){
   VERT_LABEL_FILE="${OFOLDER}/${file_t1}_labels-vert.nii.gz"
   if [[ -e ${VERT_LABEL_FILE} ]]; then
     echo "Found vertebral labels!"
-    sct_label_utils -i ${T1_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
+    sct_label_utils -i ${T1_LABEL_SEG} -vert-body 3,7 -o ${VERT_LABEL_FILE}
 
   else
     echo "Vertebral labels not found. Proceeding with vertebral level labeling."
     # Generate vertebral levels labels
-    sct_label_utils -i ${T1_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
+    sct_label_utils -i ${T1_LABEL_SEG} -vert-body 3,7 -o ${VERT_LABEL_FILE}
   fi
 }
 
@@ -119,50 +119,33 @@ rsync -Ravzh ${PATH_DATA}/./${SUBJECT}/anat/${SUBJECT//[\/]/_}_*T1w.* .
 # Go to anat folder where all structural data are located
 cd ${SUBJECT}/anat
 
-# Define the names of the T1w files
-file_t1_composed=${SUBJECT}_rec-composed_T1w
+# Define the name of the acq-top T1w file
 file_t1_top=${SUBJECT}_acq-top_run-1_T1w
-
-T1_FILES=()
-
-# Check if rec-composed T1w file exists
-if [ -f ${file_t1_composed}.nii.gz ]; then
-  T1_FILES+=("${file_t1_composed}")
-  echo "Composed T1w file found. Proceeding with processing for rec-composed T1w file."
-else
-    echo "Composed T1w file not found. Skipping."
-fi
 
 # Check if acq-top T1w file exists
 if [ -f ${file_t1_top}.nii.gz ]; then
-  T1_FILES+=("${file_t1_top}")
+  file_t1+=("${file_t1_top}")
   echo "Top T1w file found. Proceeding with processing for acq-top T1w file."
 else
   echo "acq-top T1w file not found. Skipping."
 fi
 
-echo ${T1_FILES}
+# Segment spinal cord (only if it does not exist)
+echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
+segment_sc_if_does_not_exist ${file_t1}.nii.gz
 
-# Process T1 files (both rec-composed and acq-top)
-for file_t1 in ${T1_FILES[@]}; do
+# Run totalspineseg for vertebral labeling
+echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
+label_if_does_not_exist ${file_t1}.nii.gz
 
-  # Segment spinal cord (only if it does not exist)
-  echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-  segment_sc_if_does_not_exist ${file_t1}.nii.gz
+# Generate the labeled segmentation (with the vertebral disc labels)
+echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
+label_SC_mask_if_does_not_exist ${file_t1}.nii.gz
 
-  # Run totalspineseg for vertebral labeling
-  echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
-  label_if_does_not_exist ${file_t1}.nii.gz
+# Generate the vertebral levels labels
+echo "------------------ Generating vertebral levels labels for ${SUBJECT} ------------------ "
+get_vertebral_levels_labels ${file_t2}.nii.gz
 
-  # Generate the labeled segmentation (with the vertebral disc labels)
-  echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
-  label_SC_mask_if_does_not_exist ${file_t1}.nii.gz
-
-  # Generate the vertebral levels labels
-  echo "------------------ Generating vertebral levels labels for ${SUBJECT} ------------------ "
-  get_vertebral_levels_labels ${file_t2}.nii.gz
-
-done
 
 # Display useful info for the log
 end=`date +%s`
