@@ -71,7 +71,7 @@ label_if_does_not_exist(){
 # Label the SC mask if it does not exist (using the vertebral level labels)
 label_SC_mask_if_does_not_exist(){
   # Input
-  SEG_FILE="${file_1}_label-SC_mask"
+  SEG_FILE="${file_t1}_label-SC_mask"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
   VERTLABEL_FILE="${file_t1}_labels-disc_step1_levels"
   VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
@@ -84,6 +84,23 @@ label_SC_mask_if_does_not_exist(){
   else
     echo "Labeled segmentation not found. Proceeding with sct_label_vertebrae."
     sct_label_vertebrae -i ${file_t1}.nii.gz -s ${SEG_PATH} -c t1 -discfile ${VERTLABEL_PATH} -ofolder ${OFOLDER}
+  fi
+}
+
+get_vertebral_levels_labels(){
+  # Input
+  OFOLDER="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat"
+  T1_LABEL_SEG="${OFOLDER}/${file_t1}_label-SC_mask_labeled.nii.gz"
+  # Output
+  VERT_LABEL_FILE="${OFOLDER}/${file_t1}_labels-vert.nii.gz"
+  if [[ -e ${VERT_LABEL_FILE} ]]; then
+    echo "Found vertebral labels!"
+    sct_label_utils -i ${T1_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
+
+  else
+    echo "Vertebral labels not found. Proceeding with vertebral level labeling."
+    # Generate vertebral levels labels
+    sct_label_utils -i ${T1_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
   fi
 }
 
@@ -140,6 +157,10 @@ for file_t1 in ${T1_FILES[@]}; do
   # Generate the labeled segmentation (with the vertebral disc labels)
   echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
   label_SC_mask_if_does_not_exist ${file_t1}.nii.gz
+
+  # Generate the vertebral levels labels
+  echo "------------------ Generating vertebral levels labels for ${SUBJECT} ------------------ "
+  get_vertebral_levels_labels ${file_t2}.nii.gz
 
 done
 
