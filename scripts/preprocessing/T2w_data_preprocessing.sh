@@ -74,29 +74,30 @@ detect_pmj_if_does_not_exist(){
   fi
 }
 
-# Label vertebral levels if it does not exist
-label_if_does_not_exist(){
-  # Update global variable with segmentation file name
-  VERTLABEL_FILE="${file_t2}_labels-disc"
-  VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
-  echo "Looking for manual label: $VERTLABEL_PATH"
+# Label discs if hey do not already exist
+label_discs_if_do_not_exist(){
+  # Input
+  DISC_LABEL_FILE="${file_t2}_labels-disc"
+  DISC_LABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${DISC_LABEL_FILE}.nii.gz"
+  # Output
+  VERT_LABEL_FILE="${file_t2}_labels-disc_step2_output"
+  echo "Looking for manual label: $VERT_LABEL_PATH"
   if [[ -e "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2}_labels-disc_step2_output.nii.gz" ]]; then
-    echo "Found vertebral labels!"
+    echo "Found disc labels!"
   else
-    echo "Manual intervertebral discs not found. Proceeding with automatic labeling."
+    echo "Manual discs not found. Proceeding with automatic labeling."
     # Generate vertebral labeling using the totalspineseg model
-    sct_deepseg totalspineseg -i ${file_t2}.nii.gz -o ${VERTLABEL_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
+    sct_deepseg totalspineseg -i ${file_t2}.nii.gz -o ${DISC_LABEL_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
   fi
 }
 
 # Label the SC mask if it does not exist (using the vertebral level labels)
 label_SC_mask_if_does_not_exist(){
-  
   # Input
   SEG_FILE="${file_t2}_label-SC_mask"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
-  VERTLABEL_FILE="${file_t2}_labels-disc_step1_levels"
-  VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
+  DISC_LABEL_FILE="${file_t2}_labels-disc_step1_levels"
+  DISC_LABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${DISC_LABEL_FILE}.nii.gz"
   
   # Output
   OFOLDER="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat"
@@ -106,10 +107,26 @@ label_SC_mask_if_does_not_exist(){
     echo "Found labeled segmentation."
   else
     echo "Labeled segmentation not found. Proceeding with sct_label_vertebrae."
-    sct_label_vertebrae -i ${file_t2}.nii.gz -s ${SEG_PATH} -c t2 -discfile ${VERTLABEL_PATH} -ofolder ${OFOLDER}
+    sct_label_vertebrae -i ${file_t2}.nii.gz -s ${SEG_PATH} -c t2 -discfile ${DISC_LABEL_PATH} -ofolder ${OFOLDER}
   fi
 }
 
+get_vertebral_levels_labels(){
+  # Input
+  OFOLDER="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat"
+  T2_LABEL_SEG="${OFOLDER}/${file_t2}_label-SC_mask_labeled.nii.gz"
+  # Output
+  VERT_LABEL_FILE="${OFOLDER}/${file_t2}_labels-vert.nii.gz"
+  if [[ -e ${VERT_LABEL_FILE} ]]; then
+    echo "Found vertebral labels!"
+    sct_label_utils -i ${T2_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
+
+  else
+    echo "Vertebral labels not found. Proceeding with vertebral level labeling."
+    # Generate vertebral levels labels
+    sct_label_utils -i ${T2_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
+  fi
+}
 
 # Extract centerline if does not exist
 extract_centerline_if_does_not_exist(){
@@ -186,33 +203,37 @@ for file_t2 in ${T2_FILES[@]}; do
   echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
   segment_sc_if_does_not_exist ${file_t2}.nii.gz
 
-  # Run totalspineseg for vertebral labeling
-  echo "------------------ Performing vertebral labeling for ${SUBJECT} ------------------ "
-  label_if_does_not_exist ${file_t2}.nii.gz
+  # Run totalspineseg for disc labeling
+  echo "------------------ Performing disc labeling for ${SUBJECT} ------------------ "
+  label_discs_if_do_not_exist ${file_t2}.nii.gz
 
-  # Generate the labeled segmentation (with the vertebral disc labels)
+  # Generate the labeled segmentation (with the disc labels)
   echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
   label_SC_mask_if_does_not_exist ${file_t2}.nii.gz
 
-  # Extract centerline (only if it does not exist)
-  echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
-  extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+  # Generate the vertebral levels labels
+  echo "------------------ Generating vertebral levels labels for ${SUBJECT} ------------------ "
+  get_vertebral_levels_labels ${file_t2}.nii.gz
 
-  # Project the intervertebral disc labels to the spinal cord centerline
-  echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
-  VERTLABEL_FILE="${file_t2}_labels-disc_step1_levels"
-  VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
-  CENTERLINE_FILE="${file_t2}_centerline"
-  CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
-  sct_label_utils -i ${VERTLABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  # Extract centerline (only if it does not exist)
+  # echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
+  # extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+
+  # Project the disc labels to the spinal cord centerline
+  # echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
+  # DISC_LABEL_FILE="${file_t2}_labels-disc_step1_levels"
+  # DISC_LABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${DISC_LABEL_FILE}.nii.gz"
+  # CENTERLINE_FILE="${file_t2}_centerline"
+  # CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
+  # sct_label_utils -i ${DISC_LABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
 
   # Detect PMJ (only if it does not exist)
-  echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
-  detect_pmj_if_does_not_exist ${file_t2}.nii.gz
+  # echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
+  # detect_pmj_if_does_not_exist ${file_t2}.nii.gz
 
   # Segment rootlets (only if it does not exist)
-  echo "Segmenting rootlets for ${SUBJECT}..."
-  segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
+  # echo "Segmenting rootlets for ${SUBJECT}..."
+  # segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
 
 done
 

@@ -148,13 +148,15 @@ register_T2w_to_PAM50(){
   T2_FILE=${T2w_DATA_FOLDER}/${file_t2}
   SEG_FILE="${file_t2}_label-SC_mask"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
-  VERTLABEL_FILE="${file_t2}_label-SC_mask_labeled_discs"
+  VERTLABEL_FILE="${file_t2}_labels-vert"
   VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
   # Outputs
   O_FOLDER_ANAT_REG="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/"
   
   if [[ -e "${O_FOLDER_ANAT_REG}/template2anat.nii.gz" ]]; then
     echo "Found T2w registration files. Skipping."
+    sct_register_to_template -i ${T2_FILE}.nii.gz -s ${SEG_PATH} -l ${VERTLABEL_PATH} -c t2 -o ${O_FOLDER_ANAT_REG} -qc ${QC_PATH} 
+
   else
     echo "Not found. Performing registration of T2w with PAM50 template"
     mkdir -p "${O_FOLDER_ANAT_REG}"
@@ -195,7 +197,7 @@ register_DWI_to_PAM50(){
   WARP_DWI="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/warp_template2dmri.nii.gz"
   WARP_INV_DWI="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/warp_dmri2template.nii.gz"
   
-  if [[ -e "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/reg.nii.gz" ]]; then
+  if [[ -e "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/regg.nii.gz" ]]; then
     echo "Found DWI registration files. Skipping."
   else
     # Generate the DWI <--> PAM50 warping fields (with the T2w <--> PAM50 warping fields as initialization)
@@ -232,12 +234,26 @@ extract_DTI_metrics(){
   else
     # Extract each DTI metric and save in a CSV file
     for DTI_metric in FA MD RD AD; do
+
+      # Extract metrics for separate vertebral levels
       sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
                         -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
                         -l 1,2,3,4,34,35,50,51,52,53,54,55 \
-                        -vert 2:6 \
+                        -vert 3:6 \
                         -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
                         -perlevel 1 \
+                        -perslice 0 \
+                        -method wa \
+                        -append 1 \
+                        -o "${REPO_ROOT}/results/tables/DWI/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
+
+    # Extract metrics for all vertebral levels combined and append to the same CSV file as the previous step
+    sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
+                        -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
+                        -l 1,2,3,4,34,35,50,51,52,53,54,55 \
+                        -vert 3:6 \
+                        -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
+                        -perlevel 0 \
                         -perslice 0 \
                         -method wa \
                         -append 1 \
@@ -260,23 +276,23 @@ fi
 
 # Generate the mean DWI image 
 echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
-generate_mean_DWI ${file_dwi}
+# generate_mean_DWI ${file_dwi}
 
 # Segment spinal cord
 echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-segment_spinal_cord ${file_dwi}
+# segment_spinal_cord ${file_dwi}
 
 # Perform motion correction
-echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
-motion_correction ${file_dwi}
+# echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
+# motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
-echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-compute_DTI ${file_dwi}
+# echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
+# compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
-echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-segment_moco_spinal_cord ${file_dwi}
+# echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
+# segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
 echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
@@ -290,12 +306,12 @@ file_t1=${SUBJECT}_acq-top_run-1_T1w
 # Check if file_t2_top exists
 if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
   echo "Proceeding registration to PAM50 with top T2w file."
-  # register_T2w_to_PAM50 ${file_t2}.nii.gz
+  register_T2w_to_PAM50 ${file_t2}.nii.gz
 
 # If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
 elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-  # register_T1w_to_PAM50 ${file_t1}.nii.gz
+  register_T1w_to_PAM50 ${file_t1}.nii.gz
 
 # Skip subject if no top T1w or T2w file found. 
 else
@@ -309,8 +325,8 @@ echo "------------------ Registration of DTI data with PAM50 template for ${SUBJ
 register_DWI_to_PAM50 ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
-echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
-extract_DTI_metrics ${file_dwi}.nii.gz
+# echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
+# extract_DTI_metrics ${file_dwi}.nii.gz
 
 # Display useful info for the log
 end=`date +%s`
