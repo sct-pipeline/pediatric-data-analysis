@@ -245,7 +245,7 @@ extract_DTI_metrics(){
                         -perslice 0 \
                         -method wa \
                         -append 1 \
-                        -o "${REPO_ROOT}/results/tables/DWI/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
+                        -o "${REPO_ROOT}/results/tables/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
 
     # Extract metrics for all vertebral levels combined and append to the same CSV file as the previous step
     sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
@@ -257,7 +257,7 @@ extract_DTI_metrics(){
                         -perslice 0 \
                         -method wa \
                         -append 1 \
-                        -o "${REPO_ROOT}/results/tables/DWI/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
+                        -o "${REPO_ROOT}/results/tables/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
     done
   fi
 }
