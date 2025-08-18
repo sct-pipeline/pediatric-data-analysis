@@ -239,7 +239,7 @@ extract_DTI_metrics(){
       sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
                         -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
                         -l 1,2,3,4,34,35,50,51,52,53,54,55 \
-                        -vert 3:6 \
+                        -vert 2:6 \
                         -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
                         -perlevel 1 \
                         -perslice 0 \
@@ -251,7 +251,7 @@ extract_DTI_metrics(){
     sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
                         -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
                         -l 1,2,3,4,34,35,50,51,52,53,54,55 \
-                        -vert 3:6 \
+                        -vert 3:5 \
                         -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
                         -perlevel 0 \
                         -perslice 0 \
@@ -312,7 +312,7 @@ if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
     # If T2w is excluded, check if T1w exists
     if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
       echo "T1w found. Using acq-top T1w."
-      register_T1w_to_PAM50 ${file_t1}.nii.gz
+      #register_T1w_to_PAM50 ${file_t1}.nii.gz
     else
       echo "T2w excluded and T1w not found. Skipping subject ${SUBJECT}."
       continue
@@ -321,13 +321,13 @@ if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
   # If T2w is not in the exclude list, proceed with T2w registration
   else
     echo "Proceeding registration to PAM50 with top T2w file."
-    register_T2w_to_PAM50 ${file_t2}.nii.gz
+    #register_T2w_to_PAM50 ${file_t2}.nii.gz
   fi
 
 # If top T2w does not exist, check if top T1w exists
 elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-  register_T1w_to_PAM50 ${file_t1}.nii.gz
+  #register_T1w_to_PAM50 ${file_t1}.nii.gz
 
 # Skip subject if no top T1w or T2w file found
 else
@@ -338,11 +338,11 @@ fi
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
 echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
-register_DWI_to_PAM50 ${file_dwi}.nii.gz
+#register_DWI_to_PAM50 ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
 # echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
-# extract_DTI_metrics ${file_dwi}.nii.gz
+extract_DTI_metrics ${file_dwi}.nii.gz
 
 # Display useful info for the log
 end=`date +%s`
