@@ -1,77 +1,77 @@
-participant_id	age	sex	group	scan_series
-sub-101	17	M	control	complete
-sub-102	15	F	control	complete
-sub-103	15	M	control	complete
-sub-104	15	F	control	complete
-sub-105	13	M	control	complete
-sub-106	14	M	control	complete
-sub-107	17	F	control	incomplete
-sub-108	16	M	control	complete
-sub-109	14	F	control	complete
-sub-111	17	F	control	complete
-sub-112	16	F	control	complete
-sub-113	14	F	control	complete
-sub-114	14	F	control	complete
-sub-115	13	F	control	complete
-sub-116	15	F	control	complete
-sub-118	9	F	control	complete
-sub-119	16	F	control	complete
-sub-120	17	F	control	complete
-sub-122	16	M	control	complete
-sub-123	12	F	control	complete
-sub-124	10	F	control	complete
-sub-125	7	M	control	incomplete
-sub-126	11	F	control	complete
-sub-127	13	F	control	incomplete
-sub-128	11	F	control	complete
-sub-130	16	M	control	complete
-sub-131	15	F	control	complete
-sub-132	17	M	control	complete
-sub-133	17	F	control	complete
-sub-134	14	F	control	complete
-sub-135	11	M	control	complete
-sub-136	13	M	control	complete
-sub-139	7	F	control	complete
-sub-140	15	M	control	complete
-sub-142	12	M	control	complete
-sub-143	10	F	control	complete
-sub-145	16	M	control	complete
-sub-147	13	F	control	complete
-sub-148	15	F	control	complete
-sub-149	16	F	control	complete
-sub-151	16	M	control	complete
-sub-152	6	M	control	incomplete
-sub-153	15	F	control	complete
-sub-155	16	M	control	complete
-sub-156	16	M	control	complete
-sub-158	10	F	control	incomplete
-sub-161	15	M	control	complete
-sub-162	12	F	control	complete
-sub-163	10	M	control	complete
-sub-165	15	M	control	complete
-sub-166	13	M	control	complete
-sub-167	10	M	control	complete
-sub-173	6	F	control	complete
-sub-174	9	M	control	incomplete
-sub-175	14	M	control	complete
-sub-176	12	F	control	complete
-sub-177	16	F	control	complete
-sub-178	13	M	control	complete
-sub-179	17	F	control	complete
-sub-182	17	M	control	complete
-sub-183	13	F	control	complete
-sub-184	16	F	control	complete
-sub-185	12	F	control	complete
-sub-188	12	M	control	complete
-sub-192	17	F	control	complete
-sub-197	9	M	control	complete
-sub-200	8	M	control	incomplete
-sub-202	16	F	control	complete
-sub-205	6	F	control	incomplete
-sub-206	11	M	control	complete
-sub-210	6	F	control	complete
-sub-212	12	F	control	complete
-sub-213	8	M	control	incomplete
-sub-215	16	F	control	complete
-sub-216	15	F	control	complete
-sub-217	15	M	control	complete
+participant_id	age	sex	group	scan_series	height	weight
+sub-101	17	M	control	complete	1.7780036	68.038864
+sub-102	15	F	control	complete	1.6256033	52.163129
+sub-103	15	M	control	complete	1.6510033	54.431091
+sub-104	15	F	control	complete	1.6256033	52.163129
+sub-105	13	M	control	complete	1.524	35.381
+sub-106	14	M	control	complete	1.7018034	55.338276
+sub-107	17	F	control	incomplete		
+sub-108	16	M	control	complete	1.7780036	56.699053
+sub-109	14	F	control	complete	1.498603	43.091281
+sub-111	17	F	control	complete	1.7018034	70.306826
+sub-112	16	F	control	complete	1.676	61.236
+sub-113	14	F	control	complete	1.6764034	72.574788
+sub-114	14	F	control	complete	1.5748032	46.266428
+sub-115	13	F	control	complete	1.753	72.576
+sub-116	15	F	control	complete	1.6764034	61.234978
+sub-118	9	F	control	complete	1.4224028	31.75147
+sub-119	16	F	control	complete	1.498603	38.555356
+sub-120	17	F	control	complete	1.5748032	77.110713
+sub-122	16	M	control	complete	1.7780036	68.038864
+sub-123	12	F	control	complete	1.524003	43.091281
+sub-124	10	F	control	complete	1.245	44.453
+sub-125	7	M	control	incomplete		
+sub-126	11	F	control	complete		
+sub-127	13	F	control	incomplete		
+sub-128	11	F	control	complete		
+sub-130	16	M	control	complete		
+sub-131	15	F	control	complete		
+sub-132	17	M	control	complete		
+sub-133	17	F	control	complete		
+sub-134	14	F	control	complete		
+sub-135	11	M	control	complete		
+sub-136	13	M	control	complete		
+sub-139	7	F	control	complete		
+sub-140	15	M	control	complete		
+sub-142	12	M	control	complete		
+sub-143	10	F	control	complete		
+sub-145	16	M	control	complete		
+sub-147	13	F	control	complete		
+sub-148	15	F	control	complete		
+sub-149	16	F	control	complete		
+sub-151	16	M	control	complete		
+sub-152	6	M	control	incomplete		
+sub-153	15	F	control	complete		
+sub-155	16	M	control	complete		
+sub-156	16	M	control	complete		
+sub-158	10	F	control	incomplete		
+sub-161	15	M	control	complete		
+sub-162	12	F	control	complete		
+sub-163	10	M	control	complete		
+sub-165	15	M	control	complete		
+sub-166	13	M	control	complete		
+sub-167	10	M	control	complete		
+sub-173	6	F	control	complete		
+sub-174	9	M	control	incomplete		
+sub-175	14	M	control	complete		
+sub-176	12	F	control	complete		
+sub-177	16	F	control	complete		
+sub-178	13	M	control	complete		
+sub-179	17	F	control	complete		
+sub-182	17	M	control	complete		
+sub-183	13	F	control	complete		
+sub-184	16	F	control	complete		
+sub-185	12	F	control	complete		
+sub-188	12	M	control	complete		
+sub-192	17	F	control	complete		
+sub-197	9	M	control	complete		
+sub-200	8	M	control	incomplete		
+sub-202	16	F	control	complete		
+sub-205	6	F	control	incomplete		
+sub-206	11	M	control	complete		
+sub-210	6	F	control	complete		
+sub-212	12	F	control	complete		
+sub-213	8	M	control	incomplete		
+sub-215	16	F	control	complete		
+sub-216	15	F	control	complete		
+sub-217	15	M	control	complete		

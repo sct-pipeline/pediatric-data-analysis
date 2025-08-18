@@ -171,7 +171,7 @@ register_T1w_to_PAM50(){
   T1_FILE=${T1w_DATA_FOLDER}/${file_t1}
   SEG_FILE="${file_t1}_label-SC_mask"
   SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
-  VERTLABEL_FILE="${file_t1}_label-SC_mask_labeled_discs"
+  VERTLABEL_FILE="${file_t1}_labels-vert"
   VERTLABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${VERTLABEL_FILE}.nii.gz"
   # Outputs
   O_FOLDER_ANAT_REG="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/"
@@ -295,7 +295,7 @@ echo "------------------ Performing segmentation for ${SUBJECT} ----------------
 # segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
-echo "------------------ Registration of T2w data with PAM50 template for ${SUBJECT} ------------------ "
+echo "------------------ Registration of T2w (or T1w) data with PAM50 template for ${SUBJECT} ------------------ "
 
 # Define the name of the acq-top T2w file
 file_t2=${SUBJECT}_acq-top_run-1_T2w
@@ -305,20 +305,36 @@ file_t1=${SUBJECT}_acq-top_run-1_T1w
 
 # Check if file_t2_top exists
 if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
-  echo "Proceeding registration to PAM50 with top T2w file."
-  register_T2w_to_PAM50 ${file_t2}.nii.gz
 
-# If top T2w does not exist, check if top T1w exists instead, and if so, use it to perform registration to PAM50 
+  # Check if the T2 file is inside the exclude list
+  if yq e ".t2w[]" "$EXCLUDE_FILE" | cut -d'_' -f1 | grep -qx "$SUBJECT"; then
+    echo "Skipping ${SUBJECT} (listed under "t2w" key)"
+    # If T2w is excluded, check if T1w exists
+    if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
+      echo "T1w found. Using acq-top T1w."
+      register_T1w_to_PAM50 ${file_t1}.nii.gz
+    else
+      echo "T2w excluded and T1w not found. Skipping subject ${SUBJECT}."
+      continue
+    fi
+
+  # If T2w is not in the exclude list, proceed with T2w registration
+  else
+    echo "Proceeding registration to PAM50 with top T2w file."
+    register_T2w_to_PAM50 ${file_t2}.nii.gz
+  fi
+
+# If top T2w does not exist, check if top T1w exists
 elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
   register_T1w_to_PAM50 ${file_t1}.nii.gz
 
-# Skip subject if no top T1w or T2w file found. 
+# Skip subject if no top T1w or T2w file found
 else
   echo "No top T2w or T1w file found for subject ${SUBJECT}. Skipping."
-  continue  # Skip to the next subject
-
+  continue
 fi
+
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
 echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
