@@ -186,7 +186,7 @@ register_T1w_to_PAM50(){
 }
 
 # Generate DWI <--> PAM50 warping fields and register PAM50 template to DWI space 
-register_DWI_to_PAM50(){
+register_PAM50_to_DWI(){
   # Inputs
   MEAN_MOCO_DWI_FILE="${PATH_DERIVATIVES}/motion_correction/${SUBJECT}/dwi/${file_dwi}_moco_dwi_mean.nii.gz"
   DWI_MOCO_SEG_FILE="${file_dwi}_moco_label-SC_mask"
@@ -197,7 +197,7 @@ register_DWI_to_PAM50(){
   WARP_DWI="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/warp_template2dmri.nii.gz"
   WARP_INV_DWI="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/warp_dmri2template.nii.gz"
   
-  if [[ -e "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/regg.nii.gz" ]]; then
+  if [[ -e "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/reg.nii.gz" ]]; then
     echo "Found DWI registration files. Skipping."
   else
     # Generate the DWI <--> PAM50 warping fields (with the T2w <--> PAM50 warping fields as initialization)
@@ -214,7 +214,7 @@ register_DWI_to_PAM50(){
                             -qc ${QC_PATH} \
                             -ofolder "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/"
   
-    # Register template PAM50 to the DWI subject space (to extract metrics in the subject space with the PAM50 atlas)
+    # Register PAM50 template to the DWI subject space (to extract metrics in the subject space with the PAM50 atlas)
     echo "Registering the PAM50 template to the DWI subject space"
     sct_warp_template -d ${MEAN_MOCO_DWI_FILE} -w ${WARP_DWI} -qc ${QC_PATH} -o "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/"
   
@@ -276,23 +276,23 @@ fi
 
 # Generate the mean DWI image 
 echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
-# generate_mean_DWI ${file_dwi}
+generate_mean_DWI ${file_dwi}
 
 # Segment spinal cord
 echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-# segment_spinal_cord ${file_dwi}
+segment_spinal_cord ${file_dwi}
 
 # Perform motion correction
-# echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
-# motion_correction ${file_dwi}
+echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
+motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
-# echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-# compute_DTI ${file_dwi}
+echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
+compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
-# echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-# segment_moco_spinal_cord ${file_dwi}
+echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
+segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
 echo "------------------ Registration of T2w (or T1w) data with PAM50 template for ${SUBJECT} ------------------ "
@@ -335,13 +335,12 @@ else
   continue
 fi
 
-
 # Perform registration of mean moco DTI data to and from the PAM50 template
 echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
-#register_DWI_to_PAM50 ${file_dwi}.nii.gz
+register_PAM50_to_DWI ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
-# echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
+echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
 extract_DTI_metrics ${file_dwi}.nii.gz
 
 # Display useful info for the log
