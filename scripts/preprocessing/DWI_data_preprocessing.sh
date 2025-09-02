@@ -226,7 +226,7 @@ extract_DTI_metrics(){
 
   # Define output directory to save extracted metrics
   REPO_ROOT=$(git rev-parse --show-toplevel)
-  mkdir -p "${REPO_ROOT}/results/DTI_metrics/"
+  mkdir -p "${REPO_ROOT}/results/tables/DTI_metrics/"
 
   # Check if the subject is in the exclusion list under the 'dwi' key (by checking if the entries start with '${SUBJECT}_')
   if yq e ".${EXCLUDE_KEY}[]" "$EXCLUDE_FILE" | cut -d'_' -f1 | grep -qx "$SUBJECT"; then
@@ -312,7 +312,7 @@ if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
     # If T2w is excluded, check if T1w exists
     if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
       echo "T1w found. Using acq-top T1w."
-      #register_T1w_to_PAM50 ${file_t1}.nii.gz
+      register_T1w_to_PAM50 ${file_t1}.nii.gz
     else
       echo "T2w excluded and T1w not found. Skipping subject ${SUBJECT}."
       continue
@@ -327,7 +327,7 @@ if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
 # If top T2w does not exist, check if top T1w exists
 elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-  #register_T1w_to_PAM50 ${file_t1}.nii.gz
+  register_T1w_to_PAM50 ${file_t1}.nii.gz
 
 # Skip subject if no top T1w or T2w file found
 else
