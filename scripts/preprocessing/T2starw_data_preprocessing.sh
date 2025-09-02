@@ -176,19 +176,19 @@ fi
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the spinal cord segmentation for ${SUBJECT} ------------------ "
-#segment_sc ${file_t2star}.nii.gz
+segment_sc ${file_t2star}.nii.gz
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the gray matter segmentation for ${SUBJECT} ------------------ "
-#segment_gm ${file_t2star}.nii.gz
+segment_gm ${file_t2star}.nii.gz
 
 # Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
 echo "------------------ Computing the white matter segmentation for ${SUBJECT} ------------------ "
-#get_wm_seg ${file_t2star}.nii.gz
+get_wm_seg ${file_t2star}.nii.gz
 
 # Perform registration of the PAM50 template to the T2*w data
 echo "------------------ Registration of PAM50 template to the T2*w data for ${SUBJECT} ------------------ "
-#register_PAM50_to_T2star ${file_t2star}.nii.gz
+register_PAM50_to_T2star ${file_t2star}.nii.gz
 
 # Compute CSA for the spinal cord, white matter and gray matter masks
 echo "------------------ Computing SC, WM and GM cross-sectional area (CSA) per vertebral level for ${SUBJECT} ------------------ "
