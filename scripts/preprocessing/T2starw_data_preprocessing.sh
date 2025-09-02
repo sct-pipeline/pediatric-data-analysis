@@ -89,20 +89,83 @@ get_wm_seg(){
   fi
 }
 
+# Generate T2*w <--> PAM50 warping fields and register PAM50 template to T2*w space 
+register_PAM50_to_T2star(){
+  # Inputs
+  T2star_FILE="${PATH_DATA}/${SUBJECT}/anat/${file_t2star}.nii.gz"
+  T2star_SEG_FILE="${file_t2star}_label-SC_mask"
+  T2star_SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${T2star_SEG_FILE}.nii.gz"
+  WARP_T2="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/warp_template2anat.nii.gz"
+  WARP_INV_T2="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/warp_anat2template.nii.gz"
+  # Outputs
+  WARP_T2star="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/warp_template2t2star.nii.gz"
+  WARP_INV_T2star="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/warp_t2star2template.nii.gz"
+  
+  if [[ -e "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/T2star/reg.nii.gz" ]]; then
+    echo "Found T2star registration files. Skipping."
+  else
+    # Generate the T2*w <--> PAM50 warping fields (with the T2w <--> PAM50 warping fields as initialization)
+    echo "Not found. Generating warping fields for T2*w with PAM50 template"
+    sct_register_multimodal -i "${SCT_DIR}/data/PAM50/template/PAM50_t2.nii.gz" \
+                            -iseg "${SCT_DIR}/data/PAM50/template/PAM50_cord.nii.gz" \
+                            -d ${T2star_FILE} \
+                            -dseg ${T2star_SEG_PATH} \
+                            -initwarp ${WARP_T2} \
+                            -initwarpinv ${WARP_INV_T2} \
+                            -owarp ${WARP_T2star} \
+                            -owarpinv ${WARP_INV_T2star} \
+                            -param step=1,type=seg,algo=centermass:step=2,type=seg,algo=bsplinesyn,slicewise=1,iter='5'  \
+                            -qc ${QC_PATH} \
+                            -ofolder "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/"
+  
+    # Register template PAM50 to the DWI subject space (to extract metrics in the subject space with the PAM50 atlas)
+    echo "Registering the PAM50 template to the T2star subject space"
+    sct_warp_template -d ${T2star_FILE} -w ${WARP_T2star} -qc ${QC_PATH} -o "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star"
+  
+  fi
+}
+
+# Run sct_process_segmentation for the spinal cord, white matter and gray matter segmentations
+compute_WMGM_CSA(){
+
+  # Define output directory to save extracted metrics
+  REPO_ROOT=$(git rev-parse --show-toplevel)
+  mkdir -p "${REPO_ROOT}/results/tables/WMGM_distribution/SC"
+  mkdir -p "${REPO_ROOT}/results/tables/WMGM_distribution/WM"
+  mkdir -p "${REPO_ROOT}/results/tables/WMGM_distribution/GM"
+  
+  # Inputs
+  T2STAR_SC_SEG="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-SC_mask.nii.gz" 
+  T2STAR_WM_SEG="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-WM_mask.nii.gz" 
+  T2STAR_GM_SEG="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-GM_mask.nii.gz" 
+  VERT_LEVELS="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/template/PAM50_levels.nii.gz"
+  # Outputs
+  CSV_SC_CSA="${REPO_ROOT}/results/tables/WMGM_distribution/SC/${SUBJECT}_SC_CSA.csv"
+  CSV_WM_CSA="${REPO_ROOT}/results/tables/WMGM_distribution/WM/${SUBJECT}_WM_CSA.csv"
+  CSV_GM_CSA="${REPO_ROOT}/results/tables/WMGM_distribution/GM/${SUBJECT}_GM_CSA.csv"
+  
+  if [[ -e "" ]]; then
+    echo "Found csv files for WM and GM CSA. Skipping subject ${SUBJECT}."
+  else
+    # Compute CSA for the spinal cord mask
+    echo "Computing spinal cord CSA for ${SUBJECT}"
+    sct_process_segmentation -i ${T2STAR_SC_SEG} -o ${CSV_SC_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0 
+
+    # Compute CSA for the white matter mask
+    echo "Computing white matter CSA for ${SUBJECT}"
+    sct_process_segmentation -i ${T2STAR_WM_SEG} -o ${CSV_WM_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0
+
+    # Compute CSA for the gray matter mask
+    echo "Computing gray matter CSA for ${SUBJECT}"
+    sct_process_segmentation -i ${T2STAR_GM_SEG} -o ${CSV_GM_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0
+  
+  fi
+}
+
 # SCRIPT STARTS HERE
 # ==============================================================================
 # Display useful info for the log, such as SCT version, RAM and CPU cores available
 sct_check_dependencies -short
-
-# Go to folder where data will be copied and processed
-cd $PATH_DATA_DERIVATIVES
-
-# Copy source images
-# Note: we copy only T2w to save space
-rsync -Ravzh ${PATH_DATA}/./${SUBJECT}/anat/${SUBJECT//[\/]/_}_*T2w.* .
-
-# Go to anat folder where all structural data are located
-cd ${SUBJECT}/anat
 
 # Define the suffix for the T2*w files (with `run-1` or `run-2`)
 if [[ -e "${PATH_DATA}/${SUBJECT}/anat/${SUBJECT}_run-1_T2starw.nii.gz" ]]; then
@@ -113,15 +176,23 @@ fi
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the spinal cord segmentation for ${SUBJECT} ------------------ "
-segment_sc ${file_t2star}.nii.gz
+#segment_sc ${file_t2star}.nii.gz
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the gray matter segmentation for ${SUBJECT} ------------------ "
-segment_gm ${file_t2star}.nii.gz
+#segment_gm ${file_t2star}.nii.gz
 
 # Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
 echo "------------------ Computing the white matter segmentation for ${SUBJECT} ------------------ "
-get_wm_seg ${file_t2star}.nii.gz
+#get_wm_seg ${file_t2star}.nii.gz
+
+# Perform registration of the PAM50 template to the T2*w data
+echo "------------------ Registration of PAM50 template to the T2*w data for ${SUBJECT} ------------------ "
+#register_PAM50_to_T2star ${file_t2star}.nii.gz
+
+# Compute CSA for the spinal cord, white matter and gray matter masks
+echo "------------------ Computing SC, WM and GM cross-sectional area (CSA) per vertebral level for ${SUBJECT} ------------------ "
+compute_WMGM_CSA ${file_t2star}.nii.gz
 
 # Display useful info for the log
 end=`date +%s`
