@@ -95,8 +95,6 @@ get_vertebral_levels_labels(){
   VERT_LABEL_FILE="${OFOLDER}/${file_t1}_labels-vert.nii.gz"
   if [[ -e ${VERT_LABEL_FILE} ]]; then
     echo "Found vertebral labels!"
-    sct_label_utils -i ${T1_LABEL_SEG} -vert-body 3,7 -o ${VERT_LABEL_FILE}
-
   else
     echo "Vertebral labels not found. Proceeding with vertebral level labeling."
     # Generate vertebral levels labels
