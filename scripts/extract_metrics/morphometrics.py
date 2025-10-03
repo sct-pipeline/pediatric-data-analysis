@@ -246,7 +246,7 @@ def main(subject, data_path, subject_dir, file_t2):
 
     # 3. Interpolate PMJ distances for each Vertebral Level 
     compute_interpolated_morphometrics(data_path, 
-                                       output_csv_filename=os.path.join(data_path, "derivatives/results/morphometrics/",  f"{subject}_vertlevel_morphometrics.csv"), 
+                                       output_csv_filename=os.path.join("../../results/tables/morphometrics/",  f"{subject}_vertlevel_morphometrics.csv"), 
                                        level_type='VertLevel', 
                                        t2w_pmj_label=t2w_pmj_label, 
                                        t2w_seg_file=t2w_seg_file, 
@@ -261,7 +261,7 @@ def main(subject, data_path, subject_dir, file_t2):
     # 1. Compute morphometrics per slice and per level
     compute_morphometrics(
         level_type='SpinalLevel',
-        output_csv_filename=os.path.join(data_path, "derivatives/results/morphometrics/",  f"{subject}_spinallevel_morphometrics.csv"),
+        output_csv_filename=os.path.join("../../results/tables/morphometrics/",  f"{subject}_spinallevel_morphometrics.csv"),
         participants_info=participants_info,
         t2w_seg_file=t2w_seg_file,
         label_file=spinal_levels, # Use spinal levels 
@@ -273,7 +273,7 @@ def main(subject, data_path, subject_dir, file_t2):
 
     # 2. Interpolate PMJ distances for each Vertebral Level 
     compute_interpolated_morphometrics(data_path, 
-                                       output_csv_filename=os.path.join(data_path, "derivatives/results/morphometrics/",  f"{subject}_spinallevel_morphometrics.csv"), 
+                                       output_csv_filename=os.path.join("../../results/tables/morphometrics/",  f"{subject}_spinallevel_morphometrics.csv"), 
                                        level_type='SpinalLevel', 
                                        t2w_pmj_label=t2w_pmj_label, 
                                        t2w_seg_file=t2w_seg_file, 
