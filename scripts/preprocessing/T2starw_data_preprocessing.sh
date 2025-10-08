@@ -82,6 +82,7 @@ get_wm_seg(){
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $WM_SEG_FILE ]]; then
     echo "Found WM segmentation."
+    sct_maths -i ${SC_SEG_FILE} -sub ${GM_SEG_FILE} -o ${WM_SEG_FILE}
   else
     echo "WM segmentation not found. Proceeding with automatic segmentation."
     # Substract gray matter from spinal cord to get white matter
@@ -138,7 +139,7 @@ compute_WMGM_CSA(){
   T2STAR_SC_SEG="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-SC_mask.nii.gz" 
   T2STAR_WM_SEG="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-WM_mask.nii.gz" 
   T2STAR_GM_SEG="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2star}_label-GM_mask.nii.gz" 
-  VERT_LEVELS="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/template/PAM50_levels.nii.gz"
+  VERT_LEVELS="${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/template/PAM50_spinal_levels.nii.gz"
   # Outputs
   CSV_SC_CSA="${REPO_ROOT}/results/tables/WMGM_distribution/SC/${SUBJECT}_SC_CSA.csv"
   CSV_WM_CSA="${REPO_ROOT}/results/tables/WMGM_distribution/WM/${SUBJECT}_WM_CSA.csv"
@@ -149,15 +150,18 @@ compute_WMGM_CSA(){
   else
     # Compute CSA for the spinal cord mask
     echo "Computing spinal cord CSA for ${SUBJECT}"
-    sct_process_segmentation -i ${T2STAR_SC_SEG} -o ${CSV_SC_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0 
+    sct_process_segmentation -i ${T2STAR_SC_SEG} -o ${CSV_SC_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0      # Add C2 to C5
+    sct_process_segmentation -i ${T2STAR_SC_SEG} -o ${CSV_SC_CSA} -vert "2:5" -perlevel 0 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0      # Add C2:C5 mean
 
     # Compute CSA for the white matter mask
     echo "Computing white matter CSA for ${SUBJECT}"
-    sct_process_segmentation -i ${T2STAR_WM_SEG} -o ${CSV_WM_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0
+    sct_process_segmentation -i ${T2STAR_WM_SEG} -o ${CSV_WM_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0      # Add C2 to C5
+    sct_process_segmentation -i ${T2STAR_WM_SEG} -o ${CSV_WM_CSA} -vert "2:5" -perlevel 0 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0      # Add C2:C5 mean
 
     # Compute CSA for the gray matter mask
     echo "Computing gray matter CSA for ${SUBJECT}"
-    sct_process_segmentation -i ${T2STAR_GM_SEG} -o ${CSV_GM_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0
+    sct_process_segmentation -i ${T2STAR_GM_SEG} -o ${CSV_GM_CSA} -vert "2:5" -perlevel 1 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0      # Add C2 to C5
+    sct_process_segmentation -i ${T2STAR_GM_SEG} -o ${CSV_GM_CSA} -vert "2:5" -perlevel 0 -vertfile ${VERT_LEVELS} -append 1 -angle-corr 0      # Add C2:C5 mean
   
   fi
 }
@@ -168,27 +172,27 @@ compute_WMGM_CSA(){
 sct_check_dependencies -short
 
 # Define the suffix for the T2*w files (with `run-1` or `run-2`)
-if [[ -e "${PATH_DATA}/${SUBJECT}/anat/${SUBJECT}_run-1_T2starw.nii.gz" ]]; then
-  file_t2star=${SUBJECT}_run-1_T2starw
-elif [[ -e "${PATH_DATA}/${SUBJECT}/anat/${SUBJECT}_run-2_T2starw.nii.gz" ]]; then
-  file_t2star=${SUBJECT}_run-2_T2starw
+if [[ -e "${PATH_DATA}/${SUBJECT}/anat/${SUBJECT}_run-01_T2starw.nii.gz" ]]; then
+  file_t2star=${SUBJECT}_run-01_T2starw
+elif [[ -e "${PATH_DATA}/${SUBJECT}/anat/${SUBJECT}_T2starw.nii.gz" ]]; then
+  file_t2star=${SUBJECT}_T2starw
 fi
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the spinal cord segmentation for ${SUBJECT} ------------------ "
-segment_sc ${file_t2star}.nii.gz
+#segment_sc ${file_t2star}.nii.gz
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the gray matter segmentation for ${SUBJECT} ------------------ "
-segment_gm ${file_t2star}.nii.gz
+#segment_gm ${file_t2star}.nii.gz
 
 # Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
 echo "------------------ Computing the white matter segmentation for ${SUBJECT} ------------------ "
-get_wm_seg ${file_t2star}.nii.gz
+#get_wm_seg ${file_t2star}.nii.gz
 
 # Perform registration of the PAM50 template to the T2*w data
 echo "------------------ Registration of PAM50 template to the T2*w data for ${SUBJECT} ------------------ "
-register_PAM50_to_T2star ${file_t2star}.nii.gz
+#register_PAM50_to_T2star ${file_t2star}.nii.gz
 
 # Compute CSA for the spinal cord, white matter and gray matter masks
 echo "------------------ Computing SC, WM and GM cross-sectional area (CSA) per vertebral level for ${SUBJECT} ------------------ "
