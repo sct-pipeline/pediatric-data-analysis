@@ -39,26 +39,11 @@ fi
 # Define paths
 SUBJECT_DIR="${PATH_DATA}/derivatives/labels/${SUBJECT}/anat"
 
-# Define T2 file prefixes for composed and top acquisition T2 files 
-T2_FILE_COMPOSED=${SUBJECT}_rec-composed_T2w
-T2_FILE_TOP=${SUBJECT}_acq-top_run-1_T2w
-
-# Check if composed T2w file exists
-if [ -f "${PATH_DATA}/${SUBJECT}/anat/${T2_FILE_COMPOSED}.nii.gz" ]; then
-    T2_FILE=${T2_FILE_COMPOSED}
-else
-    # Check if top acquisition exists
-    if [ -f "${PATH_DATA}/${SUBJECT}/anat/${T2_FILE_TOP}.nii.gz" ]; then
-        T2_FILE=${T2_FILE_TOP}
-        echo "Composed T2w file not found. Proceeding with top T2w file."
-    else
-        echo "Neither composed nor top T2w file found for subject ${SUBJECT}. Skipping."
-        continue  # Skip to the next subject
-    fi
-fi
+# Define T2 acq-top file prefix
+T2_FILE=${SUBJECT}_acq-top_run-1_T2w
 
 # Run rootlets.py
-python "scripts/extract_metrics/rootlets.py" \
+python "scripts/analysis/rootlets.py" \
     --subject "${SUBJECT}" \
     --subject-dir "${SUBJECT_DIR}" \
     --data-path "${PATH_DATA}" \
