@@ -11,7 +11,7 @@
 # - Segmentation of spinal rootlets (model-spinal-rootlets_ventral_D106_r20250318)
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
-#   sct_run_batch -config config/preprocessing_T2w.yaml -script scripts/preprocessing/T2w_data_preprocessing.sh
+#   sct_run_batch -config config/config_preprocessing_T2w.yaml -script scripts/preprocessing/T2w_data_preprocessing.sh
 # 
 # Author: Samuelle St-Onge
 #

@@ -6,7 +6,7 @@
 # - Labeling of the SC segmentation mask (sct_label_vertebrae)
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
-#   sct_run_batch -config config/preprocessing_T1w.yaml -script scripts/preprocessing/T1w_data_preprocessing.sh
+#   sct_run_batch -config config/config_preprocessing_T1w.yaml -script scripts/preprocessing/T1w_data_preprocessing.sh
 # 
 # Author: Samuelle St-Onge
 #
