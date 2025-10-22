@@ -26,3 +26,6 @@ results/figures/
 # Ignore other miscellaneous/WIP scripts
 scripts/others/
 
+# Ignore system files
+.DS_Store
+
