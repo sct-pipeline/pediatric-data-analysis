@@ -119,7 +119,7 @@ register_PAM50_to_T2star(){
                             -qc ${QC_PATH} \
                             -ofolder "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star/"
   
-    # Register template PAM50 to the DWI subject space (to extract metrics in the subject space with the PAM50 atlas)
+    # Register template PAM50 to the T2*w subject space (to extract metrics in the subject space with the PAM50 atlas)
     echo "Registering the PAM50 template to the T2star subject space"
     sct_warp_template -d ${T2star_FILE} -w ${WARP_T2star} -qc ${QC_PATH} -o "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/anat/t2star"
   
