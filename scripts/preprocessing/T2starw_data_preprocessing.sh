@@ -126,7 +126,7 @@ register_PAM50_to_T2star(){
   fi
 }
 
-# Generate T2*w <--> T2w warping fields (to be used to register spinal levels derived from rootlets segmentation to the T2*w space)
+# Register T2*w with T2w data (to use spinal levels derived from rootlets segmentation to extract GM, WM and SC CSA from T2*w data)
 register_T2_to_T2star(){
   # Inputs
   T2_FILE="${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz"
