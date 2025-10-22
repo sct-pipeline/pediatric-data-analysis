@@ -8,10 +8,15 @@ import spinalcordtoolbox.utils as sct
 from spinalcordtoolbox.scripts import sct_process_segmentation, sct_label_vertebrae
 
 """
-This script computes spinal cord morphometrics (e.g., CSA) from T2-weighted data.
+This script computes spinal cord morphometrics (e.g., CSA) from T2-weighted data, for both vertebral levels and spinal levels.
 
-- One CSV is saved per subject inside their folder.
-- All CSVs are then merged into a global CSV file 
+The script first computes morphometrics per slice and per level. 
+Then, it interpolates PMJ distances for each Vertebral Level, and computes morphometrics at each interpolated PMJ distance (at 0.1 mm intervals between each Vertebral Level or Spinal Level).
+
+Outputs :
+- Temporary CSV files are created for each interpolated PMJ distance (stored inside `output/results` from your `path-output` folder defined in the config file)
+- A combined CSV containing CSA values for each interpolated distance will be saved per subject under `results/tables/morphometrics`
+- The final CSV files will contain age and sex information for each subject, taken from the `participants.tsv` file.
 
 Usage : 
     The script can be run with `sct_run_batch` using the wrapper script `wrapper_rootlets.sh` as follows:
@@ -221,7 +226,7 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     participants_info = os.path.join(data_path, 'participants.tsv')
 
     # Define output CSV file
-    output_csv_dir = os.path.join(path_output, "morphometrics")
+    output_csv_dir = os.path.join("results/tables/morphometrics")
     os.makedirs(output_csv_dir, exist_ok=True) # Create a folder named "morphometrics" inside the output results folder
     output_csv_filename = os.path.join(output_csv_dir, f"{subject}_morphometrics.csv")
 
