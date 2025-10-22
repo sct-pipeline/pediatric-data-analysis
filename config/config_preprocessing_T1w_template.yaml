@@ -12,9 +12,3 @@ jobs: -1
 
 # This custom argument corresponds to the path to your local clone of the rootlets model
 script_args: 
-
-# List of subjects to include for the T1w analysis
-# In this project, this include list corresponds to the list of subjects with missing T2w + the list of
-# subjects inside the `exclude.yml`, under the `t2w` tag. This is to replace these subjects with T1w data 
-# to perform PAM50 registration, to get the warping fields from anatomical data (for DWI registration initialization)
-include_list: [ ]
