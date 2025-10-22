@@ -18,19 +18,42 @@ import sys
 import glob
 import argparse
 import pandas as pd
+import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import matplotlib.patheffects as pe
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
+import yaml
 
 # Initialize dictionaries
 AGE_TO_AXIS = {}
 SUBJECT_TO_XTICKS = {}
 LIST_OF_LEVEL_TYPES = ['rootlets', 'vertebrae']
 XOFFSET = {'rootlets': -0.10, 'vertebrae': 0.10}
-LEVEL_TYPE_COLOR = {'rootlets': 'red', 'vertebrae': 'green'}
+LEVEL_TYPE_COLOR = {'rootlets': 'red', 'vertebrae': 'blue'}
 LEVEL_TYPES_TO_LEGEND = {'rootlets': 'spinal', 'vertebrae': 'vertebral'}
 FONT_SIZE = 14
+
+# Load config file to get path to dataset
+with open('config/config_preprocessing.yaml' , 'r') as file:
+    config = yaml.safe_load(file)
+path_data = config['path_data']
+
+# Define colormap for spinal levels (light red to dark red)
+base_cmap_spinal = cm.get_cmap('Reds')
+spinal_cmap = mcolors.LinearSegmentedColormap.from_list(
+    'trunc_Reds', 
+    base_cmap_spinal(np.linspace(0.3, 1.0, 8))  # 0.3 to skip white
+)
+
+# Define colormap for vertebral levels (light blue to dark blue)
+base_cmap_vert = cm.get_cmap('Blues')
+vertebral_cmap = mcolors.LinearSegmentedColormap.from_list(
+    'trunc_Blues', 
+    base_cmap_vert(np.linspace(0.3, 1.0, 8))  # 0.3 to skip white
+)
 
 def get_parser():
     """
@@ -125,13 +148,19 @@ def generate_figure(df, dir_path, sex):
                 mean_distance = rows['distance_from_pmj_end'].mean()
                 mean_height = rows['height'].mean() # Corresponds to start - end distance
 
+                # Determine color based on level type and level
+                if level_type == 'vertebrae':
+                    color = vertebral_cmap((level - 1) / 7)  # blue gradient by level
+                else:
+                    color = spinal_cmap((level - 1) / 7)  # red gradient by level
+
                 # Plot average rectangle only
                 ax.add_patch(
                     patches.Rectangle(
                         (AGE_TO_AXIS[age] + XOFFSET[level_type], mean_distance),
                         0.10,
                         mean_height,
-                        color=LEVEL_TYPE_COLOR[level_type],
+                        color=color,
                         alpha=0.6,
                         linewidth=2,
                         edgecolor='black'
@@ -174,7 +203,7 @@ def generate_figure(df, dir_path, sex):
             f'N={count}',
             ha='center',
             va='top',
-            fontsize=FONT_SIZE - 6,
+            fontsize=FONT_SIZE - 3,
             color='black'
         )
 
@@ -208,6 +237,7 @@ def generate_figure(df, dir_path, sex):
     full_figure_path = os.path.join(figures_dir, fname_figure)
     fig.savefig(full_figure_path, dpi=300)
     print(f'Figure saved to {full_figure_path}')
+
 
 def main():
     # Parse the command line arguments
@@ -294,6 +324,7 @@ def main():
 
     # Generate figure for all subjects (no sex filtering)
     generate_figure(df, dir_path, sex=sex)
+
 
 if __name__ == '__main__':
     main()
