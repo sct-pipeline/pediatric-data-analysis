@@ -219,23 +219,23 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         "-participants", participants_tsv
     ], check=True)
 
-    # Generate figure for female subjects only
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-participants", participants_tsv,
-        '-sex', 'F'
-    ], check=True)
+    # # Generate figure for female subjects only
+    # subprocess.run([
+    #     python_executable,
+    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
+    #     "-participants", participants_tsv,
+    #     '-sex', 'F'
+    # ], check=True)
 
-    # Generate figure for male subjects only 
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-participants", participants_tsv,
-        '-sex', 'M'
-    ], check=True)
+    # # Generate figure for male subjects only 
+    # subprocess.run([
+    #     python_executable,
+    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
+    #     "-participants", participants_tsv,
+    #     '-sex', 'M'
+    # ], check=True)
 
 
 if __name__ == "__main__":
