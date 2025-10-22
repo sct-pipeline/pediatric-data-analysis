@@ -127,7 +127,7 @@ register_PAM50_to_T2star(){
 }
 
 # Register T2*w with T2w data (to use spinal levels derived from rootlets segmentation to extract GM, WM and SC CSA from T2*w data)
-register_T2_to_T2star(){
+register_T2star_to_T2(){
   # Inputs
   T2_FILE="${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz"
   T2star_FILE="${PATH_DATA}/${SUBJECT}/anat/${file_t2star}.nii.gz"
@@ -136,33 +136,33 @@ register_T2_to_T2star(){
   T2star_SEG_FILE="${file_t2star}_label-SC_mask"
   T2star_SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${T2star_SEG_FILE}.nii.gz"
   # Outputs
-  WARP_T2_to_T2star="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/warp_T2toT2star.nii.gz"
-  WARP_T2star_to_T2="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz"
+  WARP_T2_to_T2star="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/warp_T2toT2star.nii.gz"
+  WARP_T2star_to_T2="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz"
   
-  if [[ -e "${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz" ]]; then
+  if [[ -e "${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz" ]]; then
     echo "Found T2 to T2star registration files. Skipping."
   else
-    # Generate the T2w <--> T2*w warping fields and register T2w and T2*w data
-    echo "Not found. Generating warping fields for T2w to T2*w"
-    sct_register_multimodal -i ${T2_FILE} \
-                            -iseg ${T2_SEG_PATH} \
-                            -d ${T2star_FILE} \
-                            -dseg ${T2star_SEG_PATH} \
-                            -owarp ${WARP_T2_to_T2star} \
-                            -owarpinv ${WARP_T2star_to_T2} \
+    # Generate the T2*w <--> T2w warping fields and register T2*w and T2w data
+    echo "Not found. Generating warping fields to register T2*w with T2*w"
+    sct_register_multimodal -i ${T2star_FILE} \
+                            -iseg ${T2star_SEG_PATH} \
+                            -d ${T2_FILE} \
+                            -dseg ${T2_SEG_PATH} \
+                            -owarp ${WARP_T2star_to_T2} \
+                            -owarpinv ${WARP_T2_to_T2star} \
                             -param step=1,type=seg,algo=centermass:step=2,type=seg,algo=bsplinesyn,slicewise=1,iter='5'  \
                             -qc ${QC_PATH} \
-                            -ofolder "${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/"
+                            -ofolder "${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/"
   fi
 }
 
 # Segment spinal cord on T2star registered to T2 space if it does not exist
 segment_sc_in_T2_space(){
   # Input
-  T2star_reg_FILE="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_reg.nii.gz"
+  T2star_reg_FILE="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_reg.nii.gz"
   # Output
   SEG_FILE="${file_t2star}_label-SC_mask_in_T2"
-  SEG_PATH="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
+  SEG_PATH="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $SEG_PATH ]]; then
     echo "Found SC segmentation."
@@ -177,10 +177,10 @@ segment_sc_in_T2_space(){
 # Segment gray matter on T2star registered to T2 space if it does not exist
 segment_gm_in_T2_space(){
   # Input
-  T2star_reg_FILE="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_reg.nii.gz"
+  T2star_reg_FILE="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_reg.nii.gz"
   # Output
   SEG_FILE="${file_t2star}_label-GM_mask_in_T2"
-  SEG_PATH="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
+  SEG_PATH="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $SEG_PATH ]]; then
     echo "Found GM segmentation."
@@ -195,10 +195,10 @@ segment_gm_in_T2_space(){
 # Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
 get_wm_seg_in_T2_space(){
   # Input
-  SC_SEG_FILE="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-SC_mask_in_T2.nii.gz"
-  GM_SEG_FILE="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-GM_mask_in_T2.nii.gz"
+  SC_SEG_FILE="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-SC_mask_in_T2.nii.gz"
+  GM_SEG_FILE="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-GM_mask_in_T2.nii.gz"
   # Output
-  WM_SEG_FILE="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-WM_mask_in_T2.nii.gz"
+  WM_SEG_FILE="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-WM_mask_in_T2.nii.gz"
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $WM_SEG_FILE ]]; then
     echo "Found WM segmentation."
@@ -220,9 +220,9 @@ compute_WMGM_CSA_spinal_levels(){
   mkdir -p "${REPO_ROOT}/results/tables/WMGM_distribution/GM"
   
   # Inputs
-  T2STAR_SC_SEG="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-SC_mask_in_T2.nii.gz" 
-  T2STAR_WM_SEG="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-WM_mask_in_T2.nii.gz" 
-  T2STAR_GM_SEG="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-GM_mask_in_T2.nii.gz" 
+  T2STAR_SC_SEG="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-SC_mask_in_T2.nii.gz" 
+  T2STAR_WM_SEG="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-WM_mask_in_T2.nii.gz" 
+  T2STAR_GM_SEG="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/${file_t2star}_label-GM_mask_in_T2.nii.gz" 
   SPINAL_LEVELS="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${file_t2}_label-rootlets_dseg_modif_spinal_levels.nii.gz"
   # Outputs
   CSV_SC_CSA="${REPO_ROOT}/results/tables/WMGM_distribution/SC/${SUBJECT}_SC_CSA.csv"
@@ -288,8 +288,8 @@ register_PAM50_to_T2star ${file_t2star}.nii.gz
 # Perform registration of the T2w data to the T2*w data
 # This step is required to be able to transfer the spinal levels obtained from the rootlets segmentation
 # to the T2*w data (where the spinal levels are not visible)
-echo "------------------ Registration of T2w data to the T2*w data for ${SUBJECT} ------------------ "
-register_T2_to_T2star ${file_t2star}.nii.gz ${file_t2}.nii.gz
+echo "------------------ Registration of T2*w data to the T2w data for ${SUBJECT} ------------------ "
+register_T2star_to_T2 ${file_t2star}.nii.gz ${file_t2}.nii.gz
 
 # Segment sinal cord on T2star registered to T2 space if it does not exist
 echo "------------------ Generating the spinal cord segmentation in T2 space for ${SUBJECT} ------------------ "
