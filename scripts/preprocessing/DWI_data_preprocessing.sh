@@ -10,7 +10,7 @@
 # - Extract DTI metrics using the PAM50 atlas registered to the DWI space
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
-#   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script DWI_data_preprocessing.sh
+#   sct_run_batch -config config/preprocessing_DWI.yaml -script scripts/preprocessing/DWI_data_preprocessing.sh
 #
 # Author: Samuelle St-Onge
 #
@@ -94,12 +94,19 @@ motion_correction(){
   # Outputs
   MOCO_DWI_PATH="${PATH_DERIVATIVES}/motion_correction/${SUBJECT}/dwi/"
   echo "Looking for motion corrected files"
-  if [[ -e "${PATH_DERIVATIVES}/motion_correction/${SUBJECT}/dwi/${SUBJECT}_dwi_moco.nii.gz" ]]; then
+  if [[ -e "${PATH_DERIVATIVES}/motion_correction/${SUBJECT}/dwi/${SUBJECT}_dwi_mocoo.nii.gz" ]]; then
     echo "Found! Using motion corrected files."
   else
     echo "Not found. Proceeding with sct_deepseg spinalcord."
     # Perform motion correction
-    sct_dmri_moco -i ${DWI_FILE}.nii.gz -bvec ${DWI_FILE}.bvec -bval ${DWI_FILE}.bval -qc ${QC_PATH} -qc-seg ${SEG_PATH} -o ${MOCO_DWI_PATH}
+    sct_dmri_moco -i ${DWI_FILE}.nii.gz \
+                  -bvec ${DWI_FILE}.bvec \
+                  -bval ${DWI_FILE}.bval \
+                  -qc ${QC_PATH} \
+                  -qc-seg ${SEG_PATH} \
+                  -param "poly=0,metric=CC,smooth=0,iter=15" \
+                  -g 2 \
+                  -o ${MOCO_DWI_PATH}
   fi
 }
 
@@ -247,17 +254,17 @@ extract_DTI_metrics(){
                         -append 1 \
                         -o "${REPO_ROOT}/results/tables/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
 
-    # Extract metrics for all vertebral levels combined and append to the same CSV file as the previous step
-    sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
-                        -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
-                        -l 1,2,3,4,34,35,50,51,52,53,54,55 \
-                        -vert 3:5 \
-                        -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
-                        -perlevel 0 \
-                        -perslice 0 \
-                        -method wa \
-                        -append 1 \
-                        -o "${REPO_ROOT}/results/tables/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
+      # Extract metrics for all vertebral levels combined and append to the same CSV file as the previous step
+      sct_extract_metric -i "${PATH_DERIVATIVES}/DTI/${SUBJECT}/${DTI_metric}.nii.gz" \
+                          -f "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/atlas" \
+                          -l 1,2,3,4,34,35,50,51,52,53,54,55 \
+                          -vert 3:5 \
+                          -vertfile "${PATH_DERIVATIVES}/PAM50_registration/${SUBJECT}/dwi/template/PAM50_levels.nii.gz" \
+                          -perlevel 0 \
+                          -perslice 0 \
+                          -method wa \
+                          -append 1 \
+                          -o "${REPO_ROOT}/results/tables/DTI_metrics/${DTI_metric}/${SUBJECT}_${DTI_metric}.csv"
     done
   fi
 }
@@ -276,11 +283,11 @@ fi
 
 # Generate the mean DWI image 
 echo "------------------ Generating mean DWI image for ${SUBJECT} ------------------ "
-generate_mean_DWI ${file_dwi}
+#generate_mean_DWI ${file_dwi}
 
 # Segment spinal cord
 echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-segment_spinal_cord ${file_dwi}
+#segment_spinal_cord ${file_dwi}
 
 # Perform motion correction
 echo "------------------ Performing motion correction for ${SUBJECT} ------------------ "
@@ -288,11 +295,11 @@ motion_correction ${file_dwi}
 
 # Compute DTI metrics on the motion-corrected DWI image
 echo "------------------ Computing DTI metrics for ${SUBJECT}------------------"
-compute_DTI ${file_dwi}
+#compute_DTI ${file_dwi}
 
 # Segment the mean motion-corrected DWI image
 echo "------------------ Performing segmentation of mean motion-corrected DWI image for ${SUBJECT} ------------------ "
-segment_moco_spinal_cord ${file_dwi}
+#segment_moco_spinal_cord ${file_dwi}
 
 # Perform registration of T2w data to PAM50 (to use the warping fields as init for the DWI to PAM50 registration)
 echo "------------------ Registration of T2w (or T1w) data with PAM50 template for ${SUBJECT} ------------------ "
@@ -312,7 +319,7 @@ if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
     # If T2w is excluded, check if T1w exists
     if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
       echo "T1w found. Using acq-top T1w."
-      register_T1w_to_PAM50 ${file_t1}.nii.gz
+      #register_T1w_to_PAM50 ${file_t1}.nii.gz
     else
       echo "T2w excluded and T1w not found. Skipping subject ${SUBJECT}."
       continue
@@ -327,7 +334,7 @@ if [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t2}.nii.gz" ]]; then
 # If top T2w does not exist, check if top T1w exists
 elif [[ -f "${PATH_DATA}/${SUBJECT}/anat/${file_t1}.nii.gz" ]]; then
   echo "No top T2w file found for subject ${SUBJECT}. Using top T1w instead."
-  register_T1w_to_PAM50 ${file_t1}.nii.gz
+  #register_T1w_to_PAM50 ${file_t1}.nii.gz
 
 # Skip subject if no top T1w or T2w file found
 else
@@ -337,11 +344,11 @@ fi
 
 # Perform registration of mean moco DTI data to and from the PAM50 template
 echo "------------------ Registration of DTI data with PAM50 template for ${SUBJECT} ------------------ "
-register_PAM50_to_DWI ${file_dwi}.nii.gz
+#register_PAM50_to_DWI ${file_dwi}.nii.gz
 
 # Extract DTI metrics using the PAM50 atlas
 echo "------------------ Extracting DTI metrics using the PAM50 atlas for ${SUBJECT} ------------------ "
-extract_DTI_metrics ${file_dwi}.nii.gz
+#extract_DTI_metrics ${file_dwi}.nii.gz
 
 # Display useful info for the log
 end=`date +%s`

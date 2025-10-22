@@ -11,10 +11,7 @@
 # - Segmentation of spinal rootlets (model-spinal-rootlets_ventral_D106_r20250318)
 #
 # The script can be run across multiple subjects using `sct_run_batch` by the following command:
-#   sct_run_batch -path-data /path/to/data/ -path-output /path/to/output -script T2w_data_preprocessing.sh
-# 
-# It is also possible to add an `exclude.yml` file to exclude certain subjects from the batch processing. 
-# To do so, the argument '-exclude' can be added to the command above, followed by the path to the exclude.yml file.
+#   sct_run_batch -config config/preprocessing_T2w.yaml -script scripts/preprocessing/T2w_data_preprocessing.sh
 # 
 # Author: Samuelle St-Onge
 #
@@ -144,7 +141,7 @@ extract_centerline_if_does_not_exist(){
 
 # Segment rootlets if it does not exist
 segment_rootlets_if_does_not_exist(){
-  ROOTLETSEG_FILE="${file_t2}_label-dorsal_rootlets_dseg"
+  ROOTLETSEG_FILE="${file_t2}_label-rootlets_dseg"
   ROOTLETSEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${ROOTLETSEG_FILE}.nii.gz"
   echo "Looking for rootlets segmentation: $SEG_PATH"
   if [[ -e $SEG_PATH ]]; then
@@ -153,7 +150,7 @@ segment_rootlets_if_does_not_exist(){
   else
     echo "Not found. Proceeding with automatic rootlets segmentation."
     # Segment spinal cord ventral
-    sct_deepseg rootlets_t2 -i ${file_t2}.nii.gz -qc ${QC_PATH} -qc-subject ${SUBJECT} -o ${ROOTLETSEG_PATH}
+    sct_deepseg rootlets -i ${file_t2}.nii.gz -qc ${QC_PATH} -qc-subject ${SUBJECT} -o ${ROOTLETSEG_PATH}
   fi
 }
 
@@ -216,24 +213,24 @@ for file_t2 in ${T2_FILES[@]}; do
   get_vertebral_levels_labels ${file_t2}.nii.gz
 
   # Extract centerline (only if it does not exist)
-  # echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
-  # extract_centerline_if_does_not_exist ${file_t2}.nii.gz
+  echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
+  extract_centerline_if_does_not_exist ${file_t2}.nii.gz
 
   # Project the disc labels to the spinal cord centerline
-  # echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
-  # DISC_LABEL_FILE="${file_t2}_labels-disc_step1_levels"
-  # DISC_LABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${DISC_LABEL_FILE}.nii.gz"
-  # CENTERLINE_FILE="${file_t2}_centerline"
-  # CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
-  # sct_label_utils -i ${DISC_LABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  echo "------------------ Projecting intervertebral disc labels to spinal cord centerline for ${SUBJECT}------------------"
+  DISC_LABEL_FILE="${file_t2}_labels-disc_step1_levels"
+  DISC_LABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${DISC_LABEL_FILE}.nii.gz"
+  CENTERLINE_FILE="${file_t2}_centerline"
+  CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
+  sct_label_utils -i ${DISC_LABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
 
   # Detect PMJ (only if it does not exist)
-  # echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
-  # detect_pmj_if_does_not_exist ${file_t2}.nii.gz
+  echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
+  detect_pmj_if_does_not_exist ${file_t2}.nii.gz
 
   # Segment rootlets (only if it does not exist)
-  # echo "Segmenting rootlets for ${SUBJECT}..."
-  # segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
+  echo "Segmenting rootlets for ${SUBJECT}..."
+  segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
 
 done
 
