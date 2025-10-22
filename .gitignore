@@ -3,6 +3,9 @@ config/config_preprocessing.yaml
 config/config_morphometrics.yaml 
 config/config_rootlets.yaml 
 config/config_preprocessing_T1w.yaml 
+config/config_preprocessing_T2w.yaml 
+config/config_preprocessing_T2starw.yaml 
+config/config_preprocessing_DWI.yaml
 
 # Ignore SCT output folders (log files, etc.)
 output/
@@ -12,9 +15,13 @@ output/
 !config/config_morphometrics_template.yaml
 !config/config_rootlets_template.yaml
 !config/config_preprocessing_T1w_template.yaml
+!config/config_preprocessing_DWI_template.yaml
 
 # Ignore results folder
 results/tables/
+
+# Ignore figures
+results/figures/
 
 # Ignore other miscellaneous/WIP scripts
 scripts/others/
