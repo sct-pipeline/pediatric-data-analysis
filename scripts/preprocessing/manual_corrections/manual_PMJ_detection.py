@@ -32,13 +32,11 @@ args = get_arguments()
 for subject in os.listdir(args.input_dir):
     print(subject)
    
-    # # Check for rec-composed T2w image
-    # if os.path.exists(os.path.join(args.input_dir, subject, f"anat/{subject}_rec-composed_T2w.nii.gz")):
-    #     T2w_image = os.path.join(args.input_dir, subject, f"anat/{subject}_rec-composed_T2w.nii.gz")
-    # elif os.path.exists(os.path.join(args.input_dir, subject, f"anat/{subject}_acq-top_run-1_T2w.nii.gz")):
-    #     T2w_image = os.path.join(args.input_dir, subject, f"anat/{subject}_acq-top_run-1_T2w.nii.gz")
-    
-    if subject == "sub-210" or subject == "sub-111":
+    # Check for rec-composed T2w image
+    if os.path.exists(os.path.join(args.input_dir, subject, f"anat/{subject}_rec-composed_T2w.nii.gz")):
+        T2w_image = os.path.join(args.input_dir, subject, f"anat/{subject}_rec-composed_T2w.nii.gz")
+    elif os.path.exists(os.path.join(args.input_dir, subject, f"anat/{subject}_acq-top_run-1_T2w.nii.gz")):
+        T2w_image = os.path.join(args.input_dir, subject, f"anat/{subject}_acq-top_run-1_T2w.nii.gz")
 
         if os.path.exists(os.path.join(args.input_dir, subject, f"anat/{subject}_acq-top_T2w.nii.gz")):
             T2w_image = os.path.join(args.input_dir, subject, f"anat/{subject}_acq-top_T2w.nii.gz")    
