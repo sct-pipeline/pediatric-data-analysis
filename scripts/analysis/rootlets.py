@@ -70,7 +70,8 @@ def center_of_mass_to_PMJ(label, label_fname, file_t2, subject_dir, pmj_label, c
     - Computes the distance from the center of mass to the PMJ using the centerline coordinates and the PMJ label.
 
     """
-        # Extract the center of mass of each spinal level and save it in a nii.gz file
+
+    # Extract the center of mass of each spinal level and save it in a nii.gz file
     sct_label_utils.main([
         '-i', label_fname,
         '-cubic-to-point',  # To compute center of mass
@@ -183,7 +184,7 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         new_path = os.path.join(dst_folder, new_filename)
         os.rename(old_path, new_path)
 
-        # Compute the distance from the center of mass of each spinal and vertebral level to the PMJ
+        # Compute the distance from the center of mass of each spinal level to the PMJ
         spinal_levels_label_file = f'{subject_dir}/{file_t2}_label-rootlets_dseg_modif_spinal_levels.nii.gz'
         center_of_mass_to_PMJ(
             label='spinal_levels',
@@ -196,6 +197,7 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
             csv_out_path=os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_spinal_levels_pmj_distance.csv")
         )
 
+        # Compute the distance from the center of mass of each vertebral level to the PMJ
         vert_levels_label_file = f'{subject_dir}/{file_t2}_label-SC_mask_labeled.nii.gz'
         center_of_mass_to_PMJ(
             label='vert_levels',
@@ -219,24 +221,23 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         "-participants", participants_tsv
     ], check=True)
 
-    # # Generate figure for female subjects only
-    # subprocess.run([
-    #     python_executable,
-    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
-    #     "-participants", participants_tsv,
-    #     '-sex', 'F'
-    # ], check=True)
+    # Generate figure for female subjects only
+    subprocess.run([
+        python_executable,
+        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+        "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-participants", participants_tsv,
+        '-sex', 'F'
+    ], check=True)
 
-    # # Generate figure for male subjects only 
-    # subprocess.run([
-    #     python_executable,
-    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
-    #     "-participants", participants_tsv,
-    #     '-sex', 'M'
-    # ], check=True)
-
+    # Generate figure for male subjects only 
+    subprocess.run([
+        python_executable,
+        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+        "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-participants", participants_tsv,
+        '-sex', 'M'
+    ], check=True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run rootlets processing for one subject")
