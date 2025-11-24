@@ -5,7 +5,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 import pandas as pd
 import spinalcordtoolbox.utils as sct
-from spinalcordtoolbox.scripts import sct_process_segmentation, sct_label_vertebrae
+from spinalcordtoolbox.scripts import sct_process_segmentation
 
 """
 This script computes spinal cord morphometrics (e.g., CSA) from T2-weighted data, for both vertebral levels and spinal levels.
