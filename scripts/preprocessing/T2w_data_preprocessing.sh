@@ -127,6 +127,8 @@ get_vertebral_levels_labels(){
 
 # Extract centerline if does not exist
 extract_centerline_if_does_not_exist(){
+  SEG_FILE="${file_t2}_label-SC_mask"
+  SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${SEG_FILE}.nii.gz"
   CENTERLINE_FILE="${file_t2}_centerline"
   CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
   echo "Looking for centerline: $PMJ_PATH"
@@ -135,7 +137,7 @@ extract_centerline_if_does_not_exist(){
     rsync -avzh "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/"
   else
     echo "Not found. Proceeding with automatic centerline detection."
-    sct_get_centerline -i ${file_t2}.nii.gz -c t2 -o ${CENTERLINE_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
+    sct_get_centerline -i ${SEG_PATH} -method fitseg -c t2 -o ${CENTERLINE_PATH} -qc ${QC_PATH} -qc-subject ${SUBJECT}
   fi
 }
 
@@ -198,19 +200,19 @@ for file_t2 in ${T2_FILES[@]}; do
 
   # Segment spinal cord (only if it does not exist)
   echo "------------------ Performing segmentation for ${SUBJECT} ------------------ "
-  segment_sc_if_does_not_exist ${file_t2}.nii.gz
+  #segment_sc_if_does_not_exist ${file_t2}.nii.gz
 
   # Run totalspineseg for disc labeling
   echo "------------------ Performing disc labeling for ${SUBJECT} ------------------ "
-  label_discs_if_do_not_exist ${file_t2}.nii.gz
+  #label_discs_if_do_not_exist ${file_t2}.nii.gz
 
   # Generate the labeled segmentation (with the disc labels)
   echo "------------------ Generating the labeled segmentation for ${SUBJECT} ------------------ "
-  label_SC_mask_if_does_not_exist ${file_t2}.nii.gz
+  #label_SC_mask_if_does_not_exist ${file_t2}.nii.gz
 
   # Generate the vertebral levels labels
   echo "------------------ Generating vertebral levels labels for ${SUBJECT} ------------------ "
-  get_vertebral_levels_labels ${file_t2}.nii.gz
+  #get_vertebral_levels_labels ${file_t2}.nii.gz
 
   # Extract centerline (only if it does not exist)
   echo "------------------ Extracting spinal cord centerline for ${SUBJECT} ------------------ "
@@ -222,15 +224,15 @@ for file_t2 in ${T2_FILES[@]}; do
   DISC_LABEL_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${DISC_LABEL_FILE}.nii.gz"
   CENTERLINE_FILE="${file_t2}_centerline"
   CENTERLINE_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${CENTERLINE_FILE}.nii.gz"
-  sct_label_utils -i ${DISC_LABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  #sct_label_utils -i ${DISC_LABEL_PATH} -o ${CENTERLINE_PATH} -project-centerline ${CENTERLINE_PATH} -qc ${PATH_QC} -qc-subject ${SUBJECT}
 
   # Detect PMJ (only if it does not exist)
   echo "------------------ Detecting PMJ for ${SUBJECT} ------------------ "
-  detect_pmj_if_does_not_exist ${file_t2}.nii.gz
+  #detect_pmj_if_does_not_exist ${file_t2}.nii.gz
 
   # Segment rootlets (only if it does not exist)
   echo "Segmenting rootlets for ${SUBJECT}..."
-  segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
+  #segment_rootlets_if_does_not_exist ${file_t2}.nii.gz
 
 done
 
