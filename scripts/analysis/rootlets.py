@@ -127,10 +127,69 @@ def center_of_mass_to_PMJ(label, label_fname, file_t2, subject_dir, pmj_label, c
     
     return
 
+# For each spinal level, create two single-voxel labels (one at the slice_start and one at the slice_end) and save to a nifti file
+def create_single_voxel_point_labels(subject, data_path, subject_dir, t2w, t2w_centerline, file_t2, rootlets_csv_folder):
+    
+    rootlets_csv_file = os.path.join(f"{file_t2}_label-rootlets_dseg_modif_pmj_distance_rootlets.csv")
+    csv_path = os.path.join(rootlets_csv_folder, rootlets_csv_file)
+    df = pd.read_csv(csv_path)
+    print(df)
+    
+    # Get the t2w and centerline images
+    t2_image = Image(t2w) 
+    centerline = Image(t2w_centerline) 
+
+    # path to save the label image with single voxel points for the subject
+    output_path = os.path.join(data_path, f"derivatives/labels/{subject}/anat/{file_t2}_label-rootlets_spinal_levels_dlabel.nii.gz")
+
+    # Create a list for the single-voxel labels: ["z1,label1:z2,label2:..."]
+    label_list = []
+
+    for _, row in df.iterrows():
+
+        # Get the start and end slice indices for the spinal level, which will correspond to the "z" coordinate of the label
+        z_start = row['slice_start']
+        z_end = row['slice_end']
+
+        # Define the x coordinate as the center of the centerline for the z slices
+        x_start, y_start = np.where(centerline.data[:, :, z_start] != 0) # Gets the slice coordinates where the centerline is not zero (i.e., the spinal cord center, where the value is 1)
+        x_end, y_end = np.where(centerline.data[:, :, z_end] != 0)
+
+        # Convert to integer
+        x_start = int(x_start)
+        y_start = int(y_start)
+        x_end = int(x_end)
+        y_end = int(y_end)
+
+        # Get the spinal level, which will correspond to the "value" of the label
+        spinal_level = row['spinal_level']
+
+        # Append the start and end point labels to the label list
+        # The label list for sct_label_utils needs to be in the following format :  " x1, x2, z1, value1 : x2, y2, z2, value2 : ... " 
+        # Here, we create a list containing all labels in the " x1, x2, z1, value1 " format, which will be joined later with ":" to create the final label string
+        label_list.append(f"{x_start},{y_start},{z_start},{spinal_level}")
+        label_list.append(f"{x_end},{y_end},{z_end},{spinal_level}")
+
+    print(label_list)
+
+    # Separate labels with ":" to create the final label string for sct_label_utils
+    label_string = ":".join(label_list)
+
+    # Run sct_label_utils to create the label image with the single voxel points
+    sct_label_utils.main([
+        '-i', t2w,
+        '-create', label_string,
+        '-o', output_path
+    ])
+
+    print(f"Single voxel point labels saved to {output_path}")
+
 
 def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
 
     # Define paths
+    t2w = os.path.join(data_path, f"{subject}/anat/{file_t2}.nii.gz")
+    t2w_centerline = os.path.join(subject_dir, f"{file_t2}_centerline.nii.gz")
     rootlets_seg = os.path.join(subject_dir, f"{file_t2}_label-rootlets_dseg.nii.gz")
     disc_labels = os.path.join(subject_dir, f"{file_t2}_labels-disc_step1_levels.nii.gz")
     rootlets_modif = os.path.join(subject_dir, f"{file_t2}_label-rootlets_dseg_modif.nii.gz")
@@ -238,6 +297,9 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         "-participants", participants_tsv,
         '-sex', 'M'
     ], check=True)
+
+    # Create a label file containing single voxel points at the start and end of each spinal level
+    create_single_voxel_point_labels(subject, data_path, subject_dir, t2w, t2w_centerline, file_t2, rootlets_csv_folder='results/tables/rootlets')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run rootlets processing for one subject")
