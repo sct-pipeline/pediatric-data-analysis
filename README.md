@@ -2,7 +2,7 @@
 
 ## Project description
 
-This repository contains a pipeline for pediatric spinal cord data analysis. 
+This repository contains pipelines for pediatric spinal cord data analysis. It includes both a pipeline to extract and analyze spinal cord morphometrics (using T2w and T2*w data), as well as a pipeline for DTI analysis using DWI data.  
 
 For this project, MRI data from the [philadelphia-pediatric](https://data.neuro.polymtl.ca/datasets/philadelphia-pediatric) dataset was used, which includes typically-developing subjects aged 6 to 17. 
 
@@ -24,7 +24,7 @@ To execute the scripts in this repo, you will need the following configuration f
 > [!Note]
 > Template versions of these configuration files are provided in the `config` folder, with a `_template` suffix. Before running the scripts, rename each config file by removing the `_template` suffix.
 
-Inside each configuration file, you will need to set the following parameters:
+Inside the configuration files, you will need to set the following parameters:
 
 - `path_data` : the path to your local copy of the dataset
 - `path_output` : the path to where you want the output results saved
@@ -42,10 +42,12 @@ conda activate /path/to/your/venv_sct
 
 To run the scripts described in the following sections, make sure to change your directory to the project’s repository in your terminal:
 ```
-cd path/to/your/local/clone/pediatric_SC_morphometrics
+cd path/to/your/local/clone/pediatric_data-analysis
 ```
 
-### 3. T2w data preprocessing
+# Morphometric analysis 
+
+### 1. T2w data preprocessing
 
 The script `T2w_data_preprocessing.sh` (inside `scripts/preprocessing`) performs the following preprocessing steps on the T2w data : 
 - Segmentation of spinal cord from T2w data (sct_deepseg_sc)
@@ -58,10 +60,10 @@ In order to run the script in parallel, the `sct_run_batch` command can be used 
 sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/T2w_data_preprocessing.sh
 ```
 
-### 4. Extract morphometrics
+### 2. Extract morphometrics
 
 The script `morphometrics.py` (inside `scripts/analysis`) allows to :
-- Get the labeled segmentation from the disc labels (using [`sct_label_vertebrae`](https://spinalcordtoolbox.com/stable/user_section/tutorials/vertebral-labeling/sct_label_vertebrae.html))
+- Get the labeled segmentation from the disc labels on the preprocessed T2w data (using [`sct_label_vertebrae`](https://spinalcordtoolbox.com/stable/user_section/tutorials/vertebral-labeling/sct_label_vertebrae.html))
 - Run sct_process_segmentation to compute spinal cord morphometrics (cross-sectional area, diameter, etc.)
 
 To run this python script in pararallel, you can use the bash wrapper called `wrapper_morphometrics.sh` inside the `sct_run_batch` command :
@@ -69,7 +71,7 @@ To run this python script in pararallel, you can use the bash wrapper called `wr
 sct_run_batch -config config/config.yaml -script wrappers/wrapper_morphometrics.sh
 ```
 
-### 5. Process rootlets
+### 3. Process rootlets
 
 The script `rootlets.py` (inside `scripts/analysis`) :
 - Runs `zeroing_false_positive_rootlets.py` from the model-spinal-rootlets/pediatric_rootlets directory to remove false positive rootlets below the Th1 level.
@@ -81,7 +83,12 @@ The `wrapper_rootlets.sh` wrapper can be used to run the `rootlets.py` script in
 sct_run_batch -config config/config.yaml -script wrappers/wrapper_rootlets.sh
 ```
 
-### 6. Diffusion-weighted imaging (DWI) data preprocessing
+### 4. Gray matter and white matter distribution with T2*w data
+
+
+# DTI analysis 
+
+### 1. Diffusion-weighted imaging (DWI) data preprocessing
 
 The script `dwi_data_preprocessing.sh` (inside `scripts/preprocessing`) performs the following preprocessing steps on the DWI data: 
 - Generate the mean DWI image
@@ -96,3 +103,5 @@ In order to run the script in parallel, the `sct_run_batch` command can be used 
 ```
 sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/dwi_data_preprocessing.sh
 ```
+
+### 2. DTI analysis
