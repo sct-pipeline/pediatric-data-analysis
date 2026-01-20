@@ -85,6 +85,26 @@ sct_run_batch -config config/config.yaml -script wrappers/wrapper_rootlets.sh
 
 ### 4. Gray matter and white matter distribution with T2*w data
 
+The script `GM_WM_distribution.py` (inside `scripts/analysis`) extracts the CSA of GM and WM in the native T2*w space, at each spinal level along the spinal cord. 
+
+It requires as inputs (in the native T2*w space):
+    - T2*-weighted image (in the native space)
+    - The spinal cord segmentation 
+    - The gray matter segmentation
+    - The white matter segmentation 
+    - Single-voxel point labels for the start and end of each spinal level (registered from the spinal levels in the T2w space)
+
+To extract GM and WM CSA in the native T2*w, the script:
+- Gets the slices corresponding to the start and end (inferior and superior limits) of each spinal level from the single-voxel point labels
+- Computes the slices between these start and end slices for each spinal level to get the slice range corresponding to each spinal level in the T2*w space
+- Runs `sct_process_segmentation` (for each spinal level) to compute the CSA of GM, WM and SC (using the `-z` flag to define the slice range)
+
+For each subject, an output CSV file are saved in `results/tables/WMGM_distribution/` within folders `WM`, `GM` and `SC`. 
+
+The `wrapper_GM_WM_distribution.sh` wrapper can be used to run the `GM_WM_distribution.py` script in parallel with `sct_run_batch` : 
+```
+sct_run_batch -config config/config.yaml -script wrappers/wrapper_GM_WM_distribution.sh
+```
 
 # DTI analysis 
 
