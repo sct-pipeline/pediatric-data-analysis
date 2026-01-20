@@ -88,11 +88,11 @@ sct_run_batch -config config/config.yaml -script wrappers/wrapper_rootlets.sh
 The script `GM_WM_distribution.py` (inside `scripts/analysis`) extracts the CSA of GM and WM in the native T2*w space, at each spinal level along the spinal cord. 
 
 It requires as inputs (in the native T2*w space):
-    - T2*-weighted image (in the native space)
-    - The spinal cord segmentation 
-    - The gray matter segmentation
-    - The white matter segmentation 
-    - Single-voxel point labels for the start and end of each spinal level (registered from the spinal levels in the T2w space)
+- T2*-weighted image (in the native space)
+- The spinal cord segmentation 
+- The gray matter segmentation
+- The white matter segmentation 
+- Single-voxel point labels for the start and end of each spinal level (registered from the spinal levels in the T2w space)
 
 To extract GM and WM CSA in the native T2*w, the script:
 - Gets the slices corresponding to the start and end (inferior and superior limits) of each spinal level from the single-voxel point labels
@@ -105,6 +105,15 @@ The `wrapper_GM_WM_distribution.sh` wrapper can be used to run the `GM_WM_distri
 ```
 sct_run_batch -config config/config.yaml -script wrappers/wrapper_GM_WM_distribution.sh
 ```
+
+### 5. Plots
+
+Inside `results/plots`, the following jupyter notebooks contain code to generate figures related to pediatric spinal cord morphometrics:
+- `morphometrics.ipynb` : figures for CSA analysis, right-left (RL) and antero-posterior (AP) diameters, etc. 
+- `WMGM_distribution_figures.ipynb` : figures for WM/GM distribution analysis
+
+The script `generate_figure_rootlets_and_vertebral_spinal_levels.py` contains code to generate figures comparing the correspondence between vertebral and spinal levels. 
+
 
 # DTI analysis 
 
@@ -124,4 +133,6 @@ In order to run the script in parallel, the `sct_run_batch` command can be used 
 sct_run_batch -config config/config_preprocessing.yaml -script scripts/preprocessing/dwi_data_preprocessing.sh
 ```
 
-### 2. DTI analysis
+### 2. Plots
+
+Inside `results/plots`, the jupyter notebook `DWI_figures.ipynb` contains code to generate figures related to DTI analysis. 
