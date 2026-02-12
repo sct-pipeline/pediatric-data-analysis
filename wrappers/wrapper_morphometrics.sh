@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit if any command fails
 
-# Wrapper to run `rootlets.py`` per subject for use with `sct_run_batch`
+# Wrapper to run `morphometrics.py`` per subject for use with `sct_run_batch`
 
 # Usage : 
 #
@@ -50,7 +50,7 @@ else
     fi
 fi
 
-# Run rootlets.py
+# Run morphometrics.py
 python "scripts/analysis/morphometrics.py" \
     --subject "${SUBJECT}" \
     --data-path "${PATH_DATA}" \
