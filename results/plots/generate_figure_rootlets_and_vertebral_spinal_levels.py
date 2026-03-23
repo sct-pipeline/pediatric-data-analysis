@@ -9,7 +9,7 @@
 # a CSV file.
 #
 # Usage:
-#     python generate_figure_rootlets_vertebrae_spinal_levels.py -i /path/to/data_processed -participants /path/to/participants.tsv
+#     python generate_figure_rootlets_and_vertebral_spinal_levels.py -i /path/to/data_processed -participants /path/to/participants.tsv
 #
 # Modified by : Samuelle St-Onge
 
@@ -37,7 +37,7 @@ LEVEL_TYPES_TO_LEGEND = {'rootlets': 'spinal', 'vertebrae': 'vertebral'}
 FONT_SIZE = 14
 
 # Load config file to get path to dataset
-with open('config/config_preprocessing.yaml' , 'r') as file:
+with open('../../config/config_preprocessing.yaml' , 'r') as file:
     config = yaml.safe_load(file)
 path_data = config['path_data']
 
