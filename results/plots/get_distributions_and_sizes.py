@@ -20,7 +20,7 @@ import numpy as np
 from scipy.stats import norm
 import glob
 import argparse
-
+import math
 
 def get_parser():
     """
@@ -64,7 +64,7 @@ def process_data(df, level_type, normalised):
         df_filtered["mean_distance_height_pmj"] = df_filtered[["distance_from_pmj_start", "distance_from_pmj_end"]].mean(axis=1)
 
     # make table with positions of midpoint from PMJ for each level
-    df_pivot = df_filtered.pivot_table(index="participant_id", columns="spinal_level", values="mean_distance_height_pmj", aggfunc="mean")
+    df_pivot = df_filtered.pivot_table(index=["participant_id", "age"], columns="spinal_level", values="mean_distance_height_pmj", aggfunc="mean")
     df_pivot.reset_index(inplace=True)
 
     # make table with mean and std of height for each segment
@@ -74,22 +74,27 @@ def process_data(df, level_type, normalised):
 
     # rename columns to be consistent with anatomical nomenclature (spinal levels: C2, C3, C4, C5, C6, C7, C8, T1;
     # vertebral levels: C1, C2, C3, C4, C5, C6, C7, T1)
-    if level_type == "vertebrae":
-        for i, col in enumerate(df_pivot.columns[1:]):
-            if col < 8:
-                df_pivot.rename(columns={col: f"Vertebral level C{col}"}, inplace=True)
-                df_mean_std_height.rename(columns={col: f"Vertebral level C{col}"}, inplace=True)
+    for col in df_pivot.columns[2:]:  # skip participant_id and age
+        try:
+            col_int = int(col)  # try converting to int
+        except ValueError:
+            # If it fails, skip (it might already be renamed or not numeric)
+            continue
+
+        if level_type == "vertebrae":
+            if col_int < 8:
+                new_name = f"Vertebral level C{col_int}"
             else:
-                df_pivot.rename(columns={col: f"Vertebral level T{col - 7}"}, inplace=True)
-                df_mean_std_height.rename(columns={col: f"Vertebral level T{col - 7}"}, inplace=True)
-    else:
-        for i, col in enumerate(df_pivot.columns[1:]):
-            if col < 9:
-                df_pivot.rename(columns={col: f"Spinal level C{col}"}, inplace=True)
-                df_mean_std_height.rename(columns={col: f"Spinal level C{col}"}, inplace=True)
+                new_name = f"Vertebral level T{col_int - 7}"
+        else:
+            if col_int < 9:
+                new_name = f"Spinal level C{col_int}"
             else:
-                df_pivot.rename(columns={col: f"Spinal level T{col - 8}"}, inplace=True)
-                df_mean_std_height.rename(columns={col: f"Spinal level T{col - 8}"}, inplace=True)
+                new_name = f"Spinal level T{col_int - 8}"
+
+        df_pivot.rename(columns={col: new_name}, inplace=True)
+        df_mean_std_height.rename(columns={col: new_name}, inplace=True)
+
     return df_pivot, df_mean_std_height
 
 
@@ -180,84 +185,101 @@ def compute_rmse(df_rootlets_pivot, df_vertebrae_pivot, shifted):
     print(f"Overall RMSE for {shifted_label}: {rmse_overall_shifted:.4f}" if shifted else f"Overall RMSE for {shifted_label}: {rmse_overall_not_shifted:.4f}")
 
 
-def plot_distributions(df_rootlets_pivot, df_vertebrae_pivot, output_path, normalised):
+def plot_distributions_per_age(df_rootlets, df_vertebrae, output_path, normalised, levels_to_plot=None):
     """
-    Function to plot the distributions of the distances from PMJ for spinal and vertebral levels
-    (approximated by PDF functions).
-    :param df_rootlets_pivot: dataframe with distances of midpoints from PMJ for spinal levels
-    :param df_vertebrae_pivot: dataframe with distances of midpoints from PMJ for vertebral levels
-    :param output_path: path to the output folder where the figure will be saved
-    :param normalised: normalisation by height of subject (yes/no)
-    :return:
+    Plot distributions of distances from PMJ per age in subplots.
+    Each subplot corresponds to one age and shows spinal and vertebral levels.
+
+    :param df_rootlets: pivot table of spinal levels with 'age' column
+    :param df_vertebrae: pivot table of vertebral levels with 'age' column
+    :param output_path: path to save the figure
+    :param normalised: 'y' or 'n', whether distances are normalised
+    :param levels_to_plot: list of integers corresponding to levels (e.g., [2,3,4,5,6,7,8])
     """
-    # define parameters for the plot
+    import math
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from scipy.stats import norm
+
+    ages = sorted(df_rootlets['age'].dropna().unique())
+    n_cols = 4
+    n_rows = math.ceil(len(ages) / n_cols)
+
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 3 * n_rows))
+    axes = axes.flatten()
     x_limit = 200
-    y_limit = 0.30
-    step = 0.05
-    x = np.linspace(0, x_limit, 2000)
+    y_limit = 0.3
+    x_vals = np.linspace(0, x_limit, 2000)
+    cmap = plt.get_cmap("tab10")
 
-    # define the custom color palette
-    custom_palette = sns.color_palette("tab10", 10)
-    custom_palette[6] = "#f14cc1"
-    custom_palette[7] = "black"
-    sns.set_palette("Set2")
-
-    # combine the two dataframes for plotting with parameters of line style
-    dataframes = zip([df_rootlets_pivot, df_vertebrae_pivot], ["-", "--"])
-
-    # create a figure
-    plt.figure(figsize=(10, 6))
-
-    norm_stats = []
-
-    # plot the distributions for each dataframe
-    for df, style in dataframes:
-        is_spinal = df is df_rootlets_pivot
-        level_type = "Spinal level" if is_spinal else "Vertebral level"
-
-        for i, col in enumerate(df.columns[1:]):  # skip subject ID column
-            data = df[col].dropna()
-            mu, sigma = norm.fit(data)
-            y = norm.pdf(x, mu, sigma)
-
-            label = f"{col} ({mu:.2f} ± {sigma:.2f})"
-            plt.plot(x, y, label=label, linestyle=style, color=custom_palette[i % len(custom_palette)])
-            norm_stats.append({"Level": f"{level_type} {col}", "mu": mu, "sigma": sigma})
-
-    plt.xlim(0, x_limit)
-    plt.ylim(0, y_limit)
-    plt.xticks(fontsize=16)
-    plt.yticks(np.arange(0, y_limit + step, step), fontsize=16)
-    plt.ylabel("Probability [-]", fontsize=17)
-    plt.title("Fitted normal distributions for spinal and vertebral levels", fontsize=18)
-
-    # set the title and labels according to the normalisation
-    if normalised == "y":
-        plt.xlabel(
-            "Distance from PMJ [mm]",
-            fontsize=16)
-        normalised_label = "normalised"
+    # Build column names to plot
+    if levels_to_plot is not None:
+        rootlets_cols = [f"Spinal level C{lvl}" for lvl in levels_to_plot]
+        vertebrae_cols = [f"Vertebral level C{lvl}" if lvl != 8 else "Vertebral level T1" for lvl in levels_to_plot]
     else:
-        plt.xlabel(
-            "Distance from PMJ [mm]",
-            fontsize=16)
-        normalised_label = "not-normalised"
+        rootlets_cols = df_rootlets.columns[1:]
+        vertebrae_cols = df_vertebrae.columns[1:]
 
+    for i, age in enumerate(ages):
+        ax = axes[i]
+        df_rootlets_age = df_rootlets[df_rootlets['age'] == age]
+        df_vertebrae_age = df_vertebrae[df_vertebrae['age'] == age]
 
-    # set the legend and grid
-    plt.legend(ncol=2, fontsize=13, loc = "upper center")
-    plt.ylabel("Probability [-]", fontsize=18)
-    plt.xticks(fontsize=16)
-    plt.grid(True)
-    plt.tight_layout()
+        if df_rootlets_age.empty and df_vertebrae_age.empty:
+            ax.set_visible(False)
+            continue
+
+        # Plot spinal levels
+        for j, col in enumerate(rootlets_cols):
+            if col not in df_rootlets_age.columns:
+                continue
+            data = df_rootlets_age[col].dropna()
+            if len(data) == 0:
+                continue
+            mu, sigma = norm.fit(data)
+            y = norm.pdf(x_vals, mu, sigma)
+            ax.plot(x_vals, y, linestyle="-", color=cmap(j % 10), linewidth=1, label=col)
+
+        # Plot vertebral levels
+        for j, col in enumerate(vertebrae_cols):
+            if col not in df_vertebrae_age.columns:
+                continue
+            data = df_vertebrae_age[col].dropna()
+            if len(data) == 0:
+                continue
+            mu, sigma = norm.fit(data)
+            y = norm.pdf(x_vals, mu, sigma)
+            ax.plot(x_vals, y, linestyle=":", color=cmap(j % 10), linewidth=1, label=col)
+
+        ax.set_title(f"Age {age}", fontsize=12, fontweight="bold")
+        ax.set_xlim(0, x_limit)
+        ax.set_ylim(0, y_limit)
+        ax.set_xlabel("Distance from PMJ (mm)", fontsize=10)
+        ax.set_ylabel("Probability", fontsize=10)
+        ax.set_xticks(np.arange(0, 201, 25))
+        ax.grid(alpha=0.2)
+
+    # Hide unused subplots
+    for k in range(len(ages), len(axes)):
+        axes[k].set_visible(False)
+
+    # Create one legend for the whole figure
+    handles = []
+    for idx, lvl in enumerate(levels_to_plot):
+        color = cmap(idx % 10)
+        # spinal
+        handles.append(plt.Line2D([0], [0], color=color, linestyle='-', label=f'Spinal level C{lvl}'))
+        # vertebral
+        vert_label = f"Vertebral level C{lvl}" if lvl != 8 else "Vertebral level T1"
+        handles.append(plt.Line2D([0], [0], color=color, linestyle='--', label=vert_label))
+
+    fig.legend(handles=handles, ncol=len(levels_to_plot), fontsize=9,
+               loc="upper center", bbox_to_anchor=(0.5, 1.0))
+
+    plt.tight_layout(rect=[0, 0, 1, 0.95])  # leave space for the legend
     if output_path is not None:
-        plt.savefig(os.path.join(output_path, f"distributions_120_sub_{normalised_label}_height.png"),
-                    dpi=300)
+        plt.savefig(os.path.join(output_path, "distributions_per_age_selected_levels.png"), dpi=300)
     plt.show()
-
-    # save the normalised values to a overall CSV file
-    norm_values_df = pd.DataFrame(norm_stats)
-    norm_values_df.to_csv(os.path.join(output_path, f"normalised_values_{normalised_label}.csv"), index=False)
 
 def main():
     parser = get_parser()
@@ -359,7 +381,8 @@ def main():
     check_normality(df_vertebrae_pivot)
 
     # Plot the distributions of the distances from PMJ for spinal and vertebral levels
-    plot_distributions(df_rootlets_pivot, df_vertebrae_pivot, output_path, normalised)
+    levels_to_plot = [2, 3, 4, 5, 6, 7, 8]
+    plot_distributions_per_age(df_rootlets_pivot, df_vertebrae_pivot, output_path, normalised, levels_to_plot)
 
     # Compute mean and standard deviation for each spinal and vertebral level
     compute_mean_std_for_each_level(df_mean_std_height_rootlets, df_mean_std_height_vertebrae, output_path)
