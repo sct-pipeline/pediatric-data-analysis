@@ -214,102 +214,102 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
     csv_out_path = os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_vert_levels_pmj_distance.csv") # Output CSV file for center of mass distances
     python_executable = sys.executable
 
-    # if not os.path.exists(csv_out_path):
-    #     # Run `zeroing_false_positive_rootlets.py` (from the rootlets model) to remove all false positive rootlets, i.e., rootlets below the Th1 level 
-    #     subprocess.run([
-    #         python_executable,
-    #         os.path.join(rootlets_model_dir, "pediatric_rootlets", "zeroing_false_positive_rootlets.py"),
-    #         "-rootlets-seg", rootlets_seg,
-    #         "-d", disc_labels,
-    #         "-x", "11"
-    #     ], check=True)
+    if not os.path.exists(csv_out_path):
+        # Run `zeroing_false_positive_rootlets.py` (from the rootlets model) to remove all false positive rootlets, i.e., rootlets below the Th1 level 
+        subprocess.run([
+            python_executable,
+            os.path.join(rootlets_model_dir, "pediatric_rootlets", "zeroing_false_positive_rootlets.py"),
+            "-rootlets-seg", rootlets_seg,
+            "-d", disc_labels,
+            "-x", "11"
+        ], check=True)
 
-    #     # Run `02a_rootlets_to_spinal_levels.py` (from the rootlets model) to extract the spinal levels from the rootlets segmentation, 
-    #     # and save the entry and exit point distances for each spinal level relative to the PMJ in a CSV file.
-    #     subprocess.run([
-    #         python_executable,
-    #         os.path.join(rootlets_model_dir, "inter-rater_variability", "02a_rootlets_to_spinal_levels.py"),
-    #         "-i", rootlets_modif,
-    #         "-s", sc_mask,
-    #         "-pmj", pmj_label
-    #     ], check=True)
+        # Run `02a_rootlets_to_spinal_levels.py` (from the rootlets model) to extract the spinal levels from the rootlets segmentation, 
+        # and save the entry and exit point distances for each spinal level relative to the PMJ in a CSV file.
+        subprocess.run([
+            python_executable,
+            os.path.join(rootlets_model_dir, "inter-rater_variability", "02a_rootlets_to_spinal_levels.py"),
+            "-i", rootlets_modif,
+            "-s", sc_mask,
+            "-pmj", pmj_label
+        ], check=True)
 
-    #     # Call `discs_to_vertebral_levels.py`
-    #     subprocess.run([
-    #         python_executable,
-    #         os.path.join(rootlets_model_dir, "pediatric_rootlets", "discs_to_vertebral_levels.py"),
-    #         "-centerline", centerline_csv,
-    #         "-disclabel", disc_labels,
-    #     ], check=True)
+        # Call `discs_to_vertebral_levels.py`
+        subprocess.run([
+            python_executable,
+            os.path.join(rootlets_model_dir, "pediatric_rootlets", "discs_to_vertebral_levels.py"),
+            "-centerline", centerline_csv,
+            "-disclabel", disc_labels,
+        ], check=True)
 
-    #     # Change the generated CSV files to the `results/tables` folder 
-    #     PMJ_rootlets_dist_src = f'{subject_dir}/{file_t2}_label-rootlets_dseg_modif_pmj_distance.csv'
-    #     PMJ_vertlevels_dist_src = f'{subject_dir}/{file_t2}_labels-disc_step1_levels_pmj_distance_vertebral_disc.csv'
+        # Change the generated CSV files to the `results/tables` folder 
+        PMJ_rootlets_dist_src = f'{subject_dir}/{file_t2}_label-rootlets_dseg_modif_pmj_distance.csv'
+        PMJ_vertlevels_dist_src = f'{subject_dir}/{file_t2}_labels-disc_step1_levels_pmj_distance_vertebral_disc.csv'
 
-    #     # Move the files
-    #     shutil.move(PMJ_rootlets_dist_src, dst_folder)
-    #     shutil.move(PMJ_vertlevels_dist_src, dst_folder)
+        # Move the files
+        shutil.move(PMJ_rootlets_dist_src, dst_folder)
+        shutil.move(PMJ_vertlevels_dist_src, dst_folder)
 
-    #     # Rename the rootlets PMJ distance CSV file to add "_rootlets" to the filename
-    #     old_path = os.path.join(dst_folder, os.path.basename(PMJ_rootlets_dist_src))
-    #     new_filename = os.path.basename(PMJ_rootlets_dist_src).replace('_pmj_distance.csv', '_pmj_distance_rootlets.csv')
-    #     new_path = os.path.join(dst_folder, new_filename)
-    #     os.rename(old_path, new_path)
+        # Rename the rootlets PMJ distance CSV file to add "_rootlets" to the filename
+        old_path = os.path.join(dst_folder, os.path.basename(PMJ_rootlets_dist_src))
+        new_filename = os.path.basename(PMJ_rootlets_dist_src).replace('_pmj_distance.csv', '_pmj_distance_rootlets.csv')
+        new_path = os.path.join(dst_folder, new_filename)
+        os.rename(old_path, new_path)
 
-    #     # Compute the distance from the center of mass of each spinal level to the PMJ
-    #     spinal_levels_label_file = f'{subject_dir}/{file_t2}_label-rootlets_dseg_modif_spinal_levels.nii.gz'
-    #     center_of_mass_to_PMJ(
-    #         label='spinal_levels',
-    #         label_fname=spinal_levels_label_file,
-    #         file_t2=file_t2,
-    #         subject_dir=subject_dir,
-    #         pmj_label=pmj_label,
-    #         centerline_csv=centerline_csv,
-    #         participants_tsv=participants_tsv,
-    #         csv_out_path=os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_spinal_levels_pmj_distance.csv")
-    #     )
+        # Compute the distance from the center of mass of each spinal level to the PMJ
+        spinal_levels_label_file = f'{subject_dir}/{file_t2}_label-rootlets_dseg_modif_spinal_levels.nii.gz'
+        center_of_mass_to_PMJ(
+            label='spinal_levels',
+            label_fname=spinal_levels_label_file,
+            file_t2=file_t2,
+            subject_dir=subject_dir,
+            pmj_label=pmj_label,
+            centerline_csv=centerline_csv,
+            participants_tsv=participants_tsv,
+            csv_out_path=os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_spinal_levels_pmj_distance.csv")
+        )
 
-    #     # Compute the distance from the center of mass of each vertebral level to the PMJ
-    #     vert_levels_label_file = f'{subject_dir}/{file_t2}_label-SC_mask_labeled.nii.gz'
-    #     center_of_mass_to_PMJ(
-    #         label='vert_levels',
-    #         label_fname=vert_levels_label_file,
-    #         file_t2=file_t2,
-    #         subject_dir=subject_dir,
-    #         pmj_label=pmj_label,
-    #         centerline_csv=centerline_csv,
-    #         participants_tsv=participants_tsv,
-    #         csv_out_path=os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_vert_levels_pmj_distance.csv")
-    #     )
+        # Compute the distance from the center of mass of each vertebral level to the PMJ
+        vert_levels_label_file = f'{subject_dir}/{file_t2}_label-SC_mask_labeled.nii.gz'
+        center_of_mass_to_PMJ(
+            label='vert_levels',
+            label_fname=vert_levels_label_file,
+            file_t2=file_t2,
+            subject_dir=subject_dir,
+            pmj_label=pmj_label,
+            centerline_csv=centerline_csv,
+            participants_tsv=participants_tsv,
+            csv_out_path=os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_vert_levels_pmj_distance.csv")
+        )
 
-    # else:
-    #     print(f"Rootlets already processed for subject {subject}. Going straight to generating figure.")
+    else:
+        print(f"Rootlets already processed for subject {subject}. Going straight to generating figure.")
     
-    # # Generate figure for all subjects (male + female)
-    # subprocess.run([
-    #     python_executable,
-    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
-    #     "-participants", participants_tsv
-    # ], check=True)
+    # Generate figure for all subjects (male + female)
+    subprocess.run([
+        python_executable,
+        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+        "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-participants", participants_tsv
+    ], check=True)
 
-    # # Generate figure for female subjects only
-    # subprocess.run([
-    #     python_executable,
-    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
-    #     "-participants", participants_tsv,
-    #     '-sex', 'F'
-    # ], check=True)
+    # Generate figure for female subjects only
+    subprocess.run([
+        python_executable,
+        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+        "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-participants", participants_tsv,
+        '-sex', 'F'
+    ], check=True)
 
-    # # Generate figure for male subjects only 
-    # subprocess.run([
-    #     python_executable,
-    #     os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-    #     "-i", 'results/tables/rootlets', # path to pmj distance csv files
-    #     "-participants", participants_tsv,
-    #     '-sex', 'M'
-    # ], check=True)
+    # Generate figure for male subjects only 
+    subprocess.run([
+        python_executable,
+        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
+        "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-participants", participants_tsv,
+        '-sex', 'M'
+    ], check=True)
 
     # Create a label file containing single voxel points at the start and end of each spinal level
     create_single_voxel_point_labels(subject, data_path, subject_dir, t2w, t2w_centerline, file_t2, rootlets_csv_folder='results/tables/rootlets')
