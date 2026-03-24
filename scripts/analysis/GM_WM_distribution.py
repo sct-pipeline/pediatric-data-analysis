@@ -9,7 +9,7 @@ from spinalcordtoolbox.scripts import sct_process_segmentation
 from spinalcordtoolbox.image import Image
 
 """
-This script computes the gray matter (GM) and white matter (WM) distribution along the spinal cord from T2*-weighted data.
+This script computes the gray matter (GM) and white matter (WM) distribution along the spinal cord in the native T2*-weighted space, using WM and GM segmentations on the T2*w data.
 
 It requires as inputs (in the native T2*w space):
     - T2*-weighted image (in the native space)
@@ -35,7 +35,7 @@ Usage :
 Author: Samuelle St-Onge
 """
 
-def compute_GM_WM_distribution(subject, subject_dir, data_path, file_t2star, spinal_levels_list, spinal_levels_sup_path, spinal_levels_inf_path):
+def compute_GM_WM_distribution(subject, output_dir, spinal_levels_list, spinal_levels_sup_path, spinal_levels_inf_path, sc_seg_path, gm_seg_path, wm_seg_path):
     """
     Compute the GM and WM distribution along the spinal cord for a given subject.
 
@@ -61,12 +61,12 @@ def compute_GM_WM_distribution(subject, subject_dir, data_path, file_t2star, spi
         List of spinal levels to consider.
     """
 
-    # Create output directories to store the CSV files for WM, GM and SC
-    output_dir = os.path.join("results/tables/GM_WM_distribution")
-    labels = ['WM', 'GM', 'SC']
-    os.makedirs(output_dir, exist_ok=True)
-    for label in labels:
-        os.makedirs(os.path.join(output_dir, label), exist_ok=True)    
+    # Dictionary to store segmentation paths
+    seg_paths = {
+        'SC': sc_seg_path,
+        'GM': gm_seg_path,
+        'WM': wm_seg_path,
+    }
 
     # Load spinal levels start and end labels
     spinal_levels_sup_img = Image(spinal_levels_sup_path)
@@ -116,10 +116,10 @@ def compute_GM_WM_distribution(subject, subject_dir, data_path, file_t2star, spi
             print(f"---- Computing {label} CSA for {subject} ----")
 
             # Get the T2*w segmentation file path according to the label (SC, GM, WM)
-            seg_file = os.path.join(subject_dir, f"{file_t2star}_label-{label}_mask.nii.gz")
+            seg_file = seg_paths[label]
 
             # Define output CSV file path
-            temp_csv = os.path.join("results/tables/GM_WM_distribution", label, f'{subject}_{label}_{level}_CSA.csv')
+            temp_csv = os.path.join(output_dir, label, f'{subject}_{label}_{level}_CSA.csv')
 
             # Call sct_process_segmentation
             sct_process_segmentation.main([
@@ -146,10 +146,10 @@ def compute_GM_WM_distribution(subject, subject_dir, data_path, file_t2star, spi
         print(f"---- Computing {label} CSA for {subject} ----")
 
         # Get the T2*w segmentation file path according to the label (SC, GM, WM)
-        seg_file = os.path.join(subject_dir, f"{file_t2star}_label-{label}_mask.nii.gz")
+        seg_file = seg_paths[label]
 
         # Define output CSV file path
-        temp_csv = os.path.join("results/tables/GM_WM_distribution", label, f'{subject}_{label}_all_levels_CSA.csv')
+        temp_csv = os.path.join(output_dir, label, f'{subject}_{label}_all_levels_CSA.csv')
 
         # Call sct_process_segmentation
         sct_process_segmentation.main([
@@ -168,14 +168,14 @@ def compute_GM_WM_distribution(subject, subject_dir, data_path, file_t2star, spi
         print(f"---- Concatenating {label} CSA CSV files for {subject} ----")
 
         # Get all temporary CSV files for the subject and label
-        temp_csv_files = glob.glob(os.path.join("results/tables/GM_WM_distribution", label, f'{subject}_{label}_*_CSA.csv'))
+        temp_csv_files = glob.glob(os.path.join(output_dir, label, f'{subject}_{label}_*_CSA.csv'))
 
         # Concatenate all CSV files into a single DataFrame
         df_list = [pd.read_csv(f) for f in temp_csv_files]
         df_concat = pd.concat(df_list, ignore_index=True)
 
         # Define final output CSV file path
-        final_csv = os.path.join("results/tables/GM_WM_distribution", label, f'{subject}_{label}_CSA.csv')
+        final_csv = os.path.join(output_dir, label, f'{subject}_{label}_CSA.csv')
 
         # Save the concatenated DataFrame to the final CSV file
         df_concat.to_csv(final_csv, index=False)
@@ -195,9 +195,35 @@ def main(subject, data_path, path_output, subject_dir, file_t2star):
     # Define the list of spinal levels from the coordinates (by getting the list of values from the single-voxel labels in the superior labels)
     spinal_levels_list = [3,4,5,6,7]
 
-    # Compute GM, WM and SC CSA
-    compute_GM_WM_distribution(subject, subject_dir, data_path, file_t2star, spinal_levels_list, spinal_levels_sup_path, spinal_levels_inf_path)
+    # Define segmentation paths
+    sc_seg_path = os.path.join(data_path, 'derivatives/labels', subject, 'anat', f"{file_t2star}_label-SC_mask.nii.gz")
+    gm_seg_path = os.path.join(data_path, 'derivatives/labels', subject, 'anat', f"{file_t2star}_label-GM_mask.nii.gz")
+    wm_seg_path = os.path.join(data_path, 'derivatives/labels', subject, 'anat', f"{file_t2star}_label-WM_mask.nii.gz")
+    
+    # Define SC, GM, WM masks from the PAM50 atlas registered in the T2*w space
+    sc_atlas_path = os.path.join(data_path, 'derivatives/PAM50_registration', subject, 'anat/t2star/template', f"PAM50_cord.nii.gz")   
+    gm_atlas_path = os.path.join(data_path, 'derivatives/PAM50_registration', subject, 'anat/t2star/template', f"PAM50_gm.nii.gz")
+    wm_atlas_path = os.path.join(data_path, 'derivatives/PAM50_registration', subject, 'anat/t2star/template', f"PAM50_wm.nii.gz")  
 
+    # # Create output directories to store the CSV files for WM, GM and SC CSA from the segmentations on the T2*w data
+    # output_dir_t2star_seg = os.path.join("results/tables/GM_WM_distribution")
+    # labels = ['WM', 'GM', 'SC']
+    # os.makedirs(output_dir_t2star_seg, exist_ok=True)
+    # for label in labels:
+    #     os.makedirs(os.path.join(output_dir_t2star_seg, label), exist_ok=True)    
+
+    # Create output directories to store the CSV files for WM, GM and SC CSA from the PAM50 atlas registered in the T2*w space
+    output_dir_PAM50_atlas = os.path.join("results/tables/GM_WM_distribution_PAM50_atlas")
+    labels = ['WM', 'GM', 'SC']
+    os.makedirs(output_dir_PAM50_atlas, exist_ok=True)
+    for label in labels:
+        os.makedirs(os.path.join(output_dir_PAM50_atlas, label), exist_ok=True)    
+
+    # Compute GM, WM and SC CSA using the segmentations in the T2*w space
+    # compute_GM_WM_distribution(subject, output_dir_t2star_seg, spinal_levels_list, spinal_levels_sup_path, spinal_levels_inf_path, sc_seg_path, gm_seg_path, wm_seg_path)
+
+    # Compute GM, WM and SC CSA using the PAM50 atlas registered in the T2*w space
+    compute_GM_WM_distribution(subject, output_dir_PAM50_atlas, spinal_levels_list, spinal_levels_sup_path, spinal_levels_inf_path, sc_atlas_path, gm_atlas_path, wm_atlas_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run morphometric extraction for one subject")
