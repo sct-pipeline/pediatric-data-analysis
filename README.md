@@ -99,7 +99,7 @@ To extract GM and WM CSA in the native T2*w, the script:
 - Computes the slices between these start and end slices for each spinal level to get the slice range corresponding to each spinal level in the T2*w space
 - Runs `sct_process_segmentation` (for each spinal level) to compute the CSA of GM, WM and SC (using the `-z` flag to define the slice range)
 
-For each subject, an output CSV file are saved in `results/tables/WMGM_distribution/` within folders `WM`, `GM` and `SC`. 
+For each subject, an output CSV file are saved in `results/tables/GM_WM_distribution/` within folders `WM`, `GM` and `SC`. 
 
 The `wrapper_GM_WM_distribution.sh` wrapper can be used to run the `GM_WM_distribution.py` script in parallel with `sct_run_batch` : 
 ```
@@ -111,6 +111,8 @@ sct_run_batch -config config/config.yaml -script wrappers/wrapper_GM_WM_distribu
 Inside `results/plots`, the following jupyter notebooks contain code to generate figures related to pediatric spinal cord morphometrics:
 - `morphometrics.ipynb` : figures for CSA analysis, right-left (RL) and antero-posterior (AP) diameters, etc. 
 - `WMGM_distribution_figures.ipynb` : figures for WM/GM distribution analysis
+- `generate_figure_rootlets_and_vertebral_spinal_levels.py` : figure to compare spinal levels with vertebral levels (with their distances from the PMJ)
+- `get_distributions_and_sizes_vertebral_spinal_levels.py` : figure to plot the distribution of spinal and vertebral levels (approximated by normal distributions)
 
 The script `generate_figure_rootlets_and_vertebral_spinal_levels.py` contains code to generate figures comparing the correspondence between vertebral and spinal levels. 
 

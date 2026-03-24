@@ -6,7 +6,7 @@ This script was modified from : https://github.com/ivadomed/model-spinal-rootlet
 Author : Katerina Krejci
 
 Usage: 
-    python get_distributions_and_sizes.py -i <input_file> -o <output_folder> -p <participants_file> -sex <M/F> -normalised <y/n>
+    python get_distributions_and_sizes_vertebral_spinal_levels.py -i <input_file> -o <output_folder> -p <participants_file> -sex <M/F> -normalised <y/n>
 
 Modified by : Samuelle St-Onge
 """
