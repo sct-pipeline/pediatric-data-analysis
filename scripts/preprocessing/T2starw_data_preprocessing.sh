@@ -82,7 +82,6 @@ get_wm_seg(){
   echo "Looking for manual segmentation: $SEG_PATH"
   if [[ -e $WM_SEG_FILE ]]; then
     echo "Found WM segmentation."
-    sct_maths -i ${SC_SEG_FILE} -sub ${GM_SEG_FILE} -o ${WM_SEG_FILE}
   else
     echo "WM segmentation not found. Proceeding with automatic segmentation."
     # Substract gray matter from spinal cord to get white matter
@@ -136,10 +135,10 @@ register_T2star_to_T2(){
   T2star_SEG_FILE="${file_t2star}_label-SC_mask"
   T2star_SEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${T2star_SEG_FILE}.nii.gz"
   # Outputs
-  WARP_T2_to_T2star="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/warp_T2toT2star.nii.gz"
-  WARP_T2star_to_T2="${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz"
+  WARP_T2_to_T2star="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/warp_T2toT2star.nii.gz"
+  WARP_T2star_to_T2="${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz"
   
-  if [[ -e "${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz" ]]; then
+  if [[ -e "${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/warp_T2startoT2.nii.gz" ]]; then
     echo "Found T2 to T2star registration files. Skipping."
   else
     # Generate the T2*w <--> T2w warping fields and register T2*w and T2w data
@@ -152,7 +151,7 @@ register_T2star_to_T2(){
                             -owarpinv ${WARP_T2_to_T2star} \
                             -param step=1,type=seg,algo=centermass:step=2,type=seg,algo=bsplinesyn,slicewise=1,iter='5'  \
                             -qc ${QC_PATH} \
-                            -ofolder "${PATH_DERIVATIVES}/T2_and_T2star_registration/${SUBJECT}/anat/"
+                            -ofolder "${PATH_DERIVATIVES}/T2_to_T2star_registration/${SUBJECT}/anat/"
   fi
 }
 
@@ -199,11 +198,11 @@ fi
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the spinal cord segmentation for ${SUBJECT} ------------------ "
-#segment_sc ${file_t2star}.nii.gz
+segment_sc ${file_t2star}.nii.gz
 
 # Generate the labeled segmentation (with the vertebral disc labels)
 echo "------------------ Generating the gray matter segmentation for ${SUBJECT} ------------------ "
-#segment_gm ${file_t2star}.nii.gz
+segment_gm ${file_t2star}.nii.gz
 
 # Substract the gray matter segmentation from the spinal cord segmentation to get the white matter segmentation
 echo "------------------ Computing the white matter segmentation for ${SUBJECT} ------------------ "
@@ -211,17 +210,17 @@ get_wm_seg ${file_t2star}.nii.gz
 
 # Perform registration of the PAM50 template to the T2*w data
 echo "------------------ Registration of PAM50 template to the T2*w data for ${SUBJECT} ------------------ "
-#register_PAM50_to_T2star ${file_t2star}.nii.gz
+register_PAM50_to_T2star ${file_t2star}.nii.gz
 
 # Perform registration of the T2w data to the T2*w data
 # This step is required to be able to transfer the spinal levels obtained from the rootlets segmentation
 # to the T2*w data (where the spinal levels are not visible)
 echo "------------------ Registration of T2*w data to the T2w data for ${SUBJECT} ------------------ "
-#register_T2star_to_T2 ${file_t2star}.nii.gz ${file_t2}.nii.gz
+register_T2star_to_T2 ${file_t2star}.nii.gz ${file_t2}.nii.gz
 
 # Register spinal levels from T2w space to T2*w space
 echo "------------------ Registering spinal levels from T2w space to T2*w space for ${SUBJECT} ------------------ "
-#register_spinal_levels_T2_to_T2star ${file_t2}.nii.gz ${file_t2star}.nii.gz
+register_spinal_levels_T2_to_T2star ${file_t2}.nii.gz ${file_t2star}.nii.gz
 
 
 # Display useful info for the log
