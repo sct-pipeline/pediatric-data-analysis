@@ -6,6 +6,39 @@ This repository contains pipelines for pediatric spinal cord data analysis. It i
 
 For this project, MRI data from the [philadelphia-pediatric](https://data.neuro.polymtl.ca/datasets/philadelphia-pediatric) dataset was used, which includes typically-developing subjects aged 6 to 17. 
 
+### Scripts
+
+The scripts inside this repository are organized as follows:
+
+```
+└── scripts                        
+    
+    └── preprocessing     
+        ├── T2w_data_preprocessing.sh       
+        ├── T2starw_data_preprocessing.sh
+        ├── T1w_data_preprocessing.sh
+        └── DWI_data_preprocessing.sh
+    
+    └── analysis     
+        ├── morphometrics.py        # Requires running T2w_data_preprcessing.sh
+        ├── rootlets.py             # Requires running T2w_data_preprcessing.sh
+        └── GM_WM_distribution.py   # Requires running T2starw_data_preprcessing.sh and T2w_data_processing.sh
+           
+```
+
+### Results
+
+The results are organized as follows : 
+
+```
+└── results                        
+    
+    └── tables    # This folder will be created to store the output CSV files when running the scripts above (i.e., to store per-participant extracted morphometrics, DTI values, etc.)
+    
+    └── plots    # This folder contains scripts to generate figures using the CSV files inside the `tables` folder
+           
+```
+
 ## Dependencies
 
 To run the scripts in this repository, you will need the following installed or cloned on your local computer:
@@ -45,7 +78,7 @@ To run the scripts described in the following sections, make sure to change your
 cd path/to/your/local/clone/pediatric_data-analysis
 ```
 
-# Morphometric analysis 
+# Morphometric analysis pipeline
 
 ### 1. T2w data preprocessing
 
@@ -117,7 +150,7 @@ Inside `results/plots`, the following jupyter notebooks contain code to generate
 The script `generate_figure_rootlets_and_vertebral_spinal_levels.py` contains code to generate figures comparing the correspondence between vertebral and spinal levels. 
 
 
-# DTI analysis 
+# DTI analysis pipeline
 
 ### 1. Diffusion-weighted imaging (DWI) data preprocessing
 
