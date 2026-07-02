@@ -35,7 +35,7 @@ Author: Samuelle St-Onge
 
 """
 
-def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_csv):
+def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_csv, centerline):
 
     """
     This function computes sct_process_segmentation to get the PMJ distances of each slice
@@ -54,6 +54,7 @@ def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_c
         '-i', t2w_seg_file,
         '-pmj', pmj,
         '-perslice', '1',
+        '-angle-corr-centerline', centerline,
         '-o', output_per_slice_csv,
         '-append', '1'
     ])
@@ -86,9 +87,12 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
 
     print("unique labels:", np.unique(data))
 
-    # Find axis corresponding to the S-I axis
+    # Find axis corresponding to the S-I axis in the labels file
     axcodes = nib.aff2axcodes(labels.affine)
     si_axis = next(i for i, code in enumerate(axcodes) if code in ("S", "I"))
+
+    # Read per_slice_dr
+    per_slice_df = pd.read_csv(per_slice_csv)
 
     # Extract the slice corresponding to each label 
     rows = []
@@ -103,24 +107,64 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
         rows.append({
             "Subject": subject,
             "Level": int(level),
-            "Slices": int(si_coords)
+            "Slice": int(si_coords)
         })
 
     log = pd.DataFrame(rows)
     log = log.sort_values("Level").reset_index(drop=True)
 
     # Merge PMJ distances with slices 
-    per_slice_df = pd.read_csv(per_slice_csv)
-
     slice_col = "Slice (I->S)"
     pmj_col = "DistancePMJ"
 
     log = log.merge(
         per_slice_df[[slice_col, pmj_col]],
-        left_on="Slices",
+        left_on="Slice",
         right_on=slice_col,
         how="left"
     )
+
+    # Remove rows with missing PMJ distances
+    log = log.dropna(subset=["DistancePMJ"]) 
+
+    # Retrieve the last remaining row, corresponding to the last vertebral level included in the segmentation mask
+    last_level = log.iloc[-1]["Level"]
+    last_level_PMJ_dist = log.iloc[-1]["DistancePMJ"]
+    last_level_slice = log.iloc[-1]["Slice"]
+
+    # Get the slice number corresponding to the next vertebral level
+    next_level = last_level + 1
+    coords_next_level = np.where(data == next_level)
+
+    # Check if the next level exists in the image
+    if coords_next_level[si_axis].size == 0:
+        print(f"Level {next_level} not in the image. Stopping at level {last_level}.")
+        
+        # Save the CSV without adding the SC-tip as the last row
+        log.to_csv(output_PMJ_dist_csv, index=False)
+        return
+
+    next_level_slice = int(coords_next_level[si_axis][0])
+    print(f"Next level slice: {next_level_slice}")
+
+    # Find the slice and PMJ distance corresponding to the tip of the SC mask (the last slice on the segmentation mask)
+    SC_tip_slice = (per_slice_df.loc[per_slice_df["MEAN(area)"].notna(), "Slice (I->S)"].min())
+    PMJ_SC_tip_dist = per_slice_df.loc[per_slice_df["Slice (I->S)"] == SC_tip_slice, "DistancePMJ"].values[0]
+    print(f"Slice corresponding to SC tip: {SC_tip_slice}")
+
+    # Find the location of the SC tip (in percentage) between the last vertebral level and the next one
+    ratio = (SC_tip_slice - last_level_slice) / (next_level_slice - last_level_slice)
+    SC_tip_vert_level = last_level + ratio
+    print("SC_tip_vert_level:", SC_tip_vert_level)
+
+    # Append the row containing the next vert level
+    log.loc[len(log)] = {
+        "Subject": subject,
+        "Level": SC_tip_vert_level,
+        "Slice": SC_tip_slice,
+        "Slice (I->S)": SC_tip_slice,
+        "DistancePMJ": PMJ_SC_tip_dist,
+    }
 
     # Save csv 
     log.to_csv(output_PMJ_dist_csv, index=False)
@@ -134,8 +178,7 @@ def compute_interpolated_morphometrics(
     t2w_seg_file,
     participants_info,
     interp_PMJ_dist_csv,
-    final_csv_filename,
-    max_level
+    final_csv_filename
 ):
     """
     This function computes interpolated morphometrics up to max_level, and appends the results to the existing final CSV.
@@ -149,7 +192,6 @@ def compute_interpolated_morphometrics(
         participants_info: participants.tsv path
         interp_PMJ_dist_csv: intermediate interpolated PMJ CSV
         final_csv_filename: output CSV file for morphometrics
-        max_level: maximum vertebral level to compute 
     """
 
     # Read existing final CSV if it exists
@@ -160,23 +202,34 @@ def compute_interpolated_morphometrics(
         final_results_df = pd.DataFrame()
         computed_levels = []
 
-    # Read PMJ distances and generate levels
+    # Read PMJ distances in the '_PMJ_dist.csv' files and generate levels
     pmj_df = pd.read_csv(PMJ_distances_csv)
     if 'DistancePMJ' not in pmj_df.columns:
         raise ValueError(f"Missing 'DistancePMJ' column in {PMJ_distances_csv}")
-
+    
     levels = pmj_df['Level'].values
     pmj_distances = pmj_df['DistancePMJ'].values
     interp_func = interp1d(levels, pmj_distances, kind='linear', fill_value='extrapolate')
+    
+    # Get min and max levels 
+    min_level = levels.min()
+    max_level = levels.max()
 
-    # Generate all levels up to max_level
-    all_levels = np.arange(int(levels.min()), max_level + 0.1, 0.1)
-    all_levels = np.round(all_levels, 1)
+    # Generate levels every 0.1
+    all_levels = np.arange(min_level, max_level, 0.1)
+    all_levels = np.round(all_levels, 2) 
 
-    # Only keep levels not already computed
+    # Make sure the last level is included
+    if all_levels[-1] != max_level:
+        all_levels = np.append(all_levels, max_level)
+
+    # Define vertebral levels to compute
     levels_to_compute = [lvl for lvl in all_levels if lvl not in computed_levels]
+    print(f"Vertebral levels to compute for {subject} : {levels_to_compute}")
+    
+    # Only keep levels not already computed
     if not levels_to_compute:
-        print(f"All levels up to {max_level} already computed for {subject}. Nothing to do.")
+        print(f"All levels up to {max_level} already computed for {subject}.")
         return
 
     # Compute interpolated PMJ distances for missing levels
@@ -187,9 +240,12 @@ def compute_interpolated_morphometrics(
     
     # List to store new results
     new_results = []
+    temp_files = []
 
+    # Run sct_process_segmentation for each interpolated vertebral level (1.0, 1.1, 1.2, etc.)
     for level, distance_pmj in zip(levels_to_compute, interp_distances):
         temp_csv_filename = os.path.join(output_csv_path, f"{subject}_temp_pmj_{level}.csv")
+        temp_files.append(temp_csv_filename)
 
         # Skip if temp file already exists (safety)
         if os.path.exists(temp_csv_filename):
@@ -231,7 +287,7 @@ def compute_interpolated_morphometrics(
     # Concatenate new results to existing CSV
     if new_results:
         new_results_df = pd.concat(new_results, ignore_index=True)
-        new_results_df = new_results_df.merge(df_participants_info[['subject', 'age', 'sex']], on='subject', how='left')
+        new_results_df = new_results_df.merge(df_participants_info[['subject', 'age', 'sex', 'height', 'weight']], on='subject', how='left')
 
         if final_results_df.empty:
             final_results_df = new_results_df
@@ -242,6 +298,14 @@ def compute_interpolated_morphometrics(
         # Save updated CSV
         final_results_df.to_csv(final_csv_filename, index=False)
         print(f"Updated morphometrics saved to: {final_csv_filename}")
+        
+        # Delete temporary files
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+
+        print(f"Deleted {len(temp_files)} temporary files.")
+    
     else:
         print("No new levels were computed.")
 
@@ -252,6 +316,7 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     t2w_seg_file = os.path.join(subject_dir, f"{file_t2}_label-SC_mask.nii.gz")
     t2w_disc_labels = os.path.join(subject_dir, f"{file_t2}_labels-disc_step1_levels.nii.gz")
     t2w_pmj_label = os.path.join(subject_dir, f"{file_t2}_label-PMJ_dlabel.nii.gz")
+    centerline = os.path.join(subject_dir, f"{file_t2}_centerline.nii.gz")
     participants_info = os.path.join(data_path, 'participants.tsv')
 
     # Define output CSV files
@@ -262,14 +327,17 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     interp_PMJ_dist_csv = os.path.join(output_csv_dir, f"{subject}_PMJ_dist_interp.csv")
     final_csv = os.path.join(output_csv_dir, f"{subject}_interpolated_morphometrics.csv")
 
-    # Define max vert level
-    max_level = 20.0
+    # Define max vert level based on the maximum value in the t2w_disc_labels file
+    labels_img = nib.load(t2w_disc_labels)
+    labels_data = labels_img.get_fdata()
+    max_level = int(np.max(labels_data))
 
     # Step 1 : Run sct_process_segmentation per slice to get the PMJ distances of each slice
     run_sct_process_segmentation_per_slice(
         pmj=t2w_pmj_label,
         t2w_seg_file=t2w_seg_file,
-        output_per_slice_csv=output_per_slice_csv
+        output_per_slice_csv=output_per_slice_csv,
+        centerline=centerline
         )
     
     # Step 2 : Get the disc label slices and add the PMJ distances of each disc label
@@ -290,8 +358,7 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
         t2w_seg_file=t2w_seg_file,
         participants_info=participants_info,
         interp_PMJ_dist_csv=interp_PMJ_dist_csv,
-        final_csv_filename=final_csv,
-        max_level=max_level
+        final_csv_filename=final_csv
     )
 
 if __name__ == "__main__":
