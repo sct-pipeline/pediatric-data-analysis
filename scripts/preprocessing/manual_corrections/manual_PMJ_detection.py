@@ -3,10 +3,12 @@ import argparse
 from spinalcordtoolbox.scripts import sct_label_utils
 
 """
-Script to compute manual detection of PMJ using sct_label_utils. 
+This script iterates through the T2w images in a dataset and opens the `sct_label_utils` interactive viewer to allow
+manual detection of a single-voxel label at the ponto-medullary junction (PMJ) using `sct_label_utils`. The resulting PMJ
+label is then saved in the derivatives folder.
 
 Example usage:
-python script.py -i /path/to/data -s sub-001
+    sct_run_batch -config config/config_morphometrics.yaml -script wrappers/wrapper_manual_PMJ_detection.sh
 """
 
 def main(data_path, subject):
