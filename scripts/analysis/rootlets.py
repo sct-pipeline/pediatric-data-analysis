@@ -157,6 +157,8 @@ def create_single_voxel_point_labels(subject, data_path, subject_dir, t2w, t2w_c
         x_inf, y_inf = np.where(centerline.data[:, :, z_inf] != 0) # Gets the slice coordinates where the centerline is not zero (i.e., the spinal cord center, where the value is 1)
         x_sup, y_sup = np.where(centerline.data[:, :, z_sup] != 0)
 
+        print(f'slice_start : {x_inf}')
+
         # Convert to integer
         x_inf = int(x_inf)
         y_inf = int(y_inf)
@@ -214,7 +216,7 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
     csv_out_path = os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_vert_levels_pmj_distance.csv") # Output CSV file for center of mass distances
     python_executable = sys.executable
 
-    if not os.path.exists(csv_out_path):
+    if not os.path.exists(os.path.join(dst_folder, f"{file_t2}_label-rootlets_center_of_mass_vert_levels_pmj_distance.csv")):
         # Run `zeroing_false_positive_rootlets.py` (from the rootlets model) to remove all false positive rootlets, i.e., rootlets below the Th1 level 
         subprocess.run([
             python_executable,
@@ -307,6 +309,16 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         python_executable,
         os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
         "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-participants", participants_tsv,
+        '-sex', 'M'
+    ], check=True)
+
+    # Generate figure illustrating spinal and vertebral levels distribution 
+    subprocess.run([
+        python_executable,
+        os.path.join(f'results/plots/', "get_distributions_and_sizes_vertebral_spinal_levels.py"),
+        "-i", 'results/tables/rootlets', # path to pmj distance csv files
+        "-o", 'results/figures', # path to pmj distance csv files
         "-participants", participants_tsv,
         '-sex', 'M'
     ], check=True)

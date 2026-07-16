@@ -6,7 +6,7 @@ This script was modified from : https://github.com/ivadomed/model-spinal-rootlet
 Author : Katerina Krejci
 
 Usage: 
-    python get_distributions_and_sizes_vertebral_spinal_levels.py -i <input_file> -o <output_folder> -p <participants_file> -sex <M/F> -normalised <y/n>
+    python get_distributions_and_sizes_vertebral_spinal_levels.py -i <data_folder> -o <output_folder> -p <participants_file> -sex <M/F> -normalised <y/n>
 
 Modified by : Samuelle St-Onge
 """
@@ -97,20 +97,30 @@ def process_data(df, level_type, normalised):
 
     return df_pivot, df_mean_std_height
 
+def check_normality_per_age(df_pivot):
+    """
+    Check normality per age and per level using Shapiro-Wilk test.
+    """
+    levels = df_pivot.columns[2:]  # skip participant_id and age
 
-def check_normality(df_pivot):
-    """
-    Function to check normality of the distributions for each spinal and vertebral level using Shapiro-Wilk test.
-    :param df_pivot: dataframe with distances from PMJ for spinal and vertebral levels
-    :return: dictionary with results of normality test for each level
-    """
-    for col in df_pivot.columns[1:]:
-        data = df_pivot[col].dropna()
-        stat, p_value = shapiro(data)
-        if p_value > 0.05:
-            print(f"Normal distribution of {col}")
-        else:
-            print(f"Not normal distribution of {col}")
+    for age in sorted(df_pivot['age'].dropna().unique()):
+        df_age = df_pivot[df_pivot['age'] == age]
+
+        print(f"\n=== Age {age} ===")
+
+        for col in levels:
+            data = df_age[col].dropna()
+
+            if len(data) < 3:
+                print(f"{col}: Not enough data")
+                continue
+
+            stat, p_value = shapiro(data)
+
+            if p_value > 0.05:
+                print(f"{col}: Normal (p={p_value:.4f})")
+            else:
+                print(f"{col}: Not normal (p={p_value:.4f})")
 
 
 def compute_mean_std_for_each_level(df_rootlets_pivot, df_vertebrae_pivot, output_path):
