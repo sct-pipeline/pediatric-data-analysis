@@ -31,13 +31,38 @@ import yaml
 AGE_TO_AXIS = {}
 SUBJECT_TO_XTICKS = {}
 LIST_OF_LEVEL_TYPES = ['rootlets', 'vertebrae']
-XOFFSET = {'rootlets': -0.10, 'vertebrae': 0.10}
+RECT_WIDTH = 0.18
+XOFFSET = {'rootlets': -RECT_WIDTH / 2,'vertebrae': RECT_WIDTH / 2}
 LEVEL_TYPE_COLOR = {'rootlets': 'red', 'vertebrae': 'blue'}
 LEVEL_TYPES_TO_LEGEND = {'rootlets': 'spinal', 'vertebrae': 'vertebral'}
 FONT_SIZE = 14
 
+# Mapping for vertebral levels
+VERTEBRAL_LABELS = {
+    2: "C2",
+    3: "C3",
+    4: "C4",
+    5: "C5",
+    6: "C6",
+    7: "C7",
+    8: "T1",
+    9: "T2",
+}
+
+# Mapping for spinal levels
+SPINAL_LABELS = {
+    2: "C2",
+    3: "C3",
+    4: "C4",
+    5: "C5",
+    6: "C6",
+    7: "C7",
+    8: "C8",
+    9: "T1",
+}
+
 # Load config file to get path to dataset
-with open('../../config/config_preprocessing.yaml' , 'r') as file:
+with open('config/config_rootlets.yaml' , 'r') as file:
     config = yaml.safe_load(file)
 path_data = config['path_data']
 
@@ -158,7 +183,7 @@ def generate_figure(df, dir_path, sex):
                 ax.add_patch(
                     patches.Rectangle(
                         (AGE_TO_AXIS[age] + XOFFSET[level_type], mean_distance),
-                        0.10,
+                        RECT_WIDTH,
                         mean_height,
                         color=color,
                         alpha=0.6,
@@ -167,11 +192,15 @@ def generate_figure(df, dir_path, sex):
                     )
                 )
 
-                # Add number label at the center of rectangle
+                if level_type == "vertebrae":
+                    label = VERTEBRAL_LABELS[level]
+                elif level_type == "rootlets":
+                    label = SPINAL_LABELS[level]
+
                 ax.text(
-                    AGE_TO_AXIS[age] + XOFFSET[level_type] + 0.05,
+                    AGE_TO_AXIS[age] + XOFFSET[level_type] + RECT_WIDTH / 2,
                     mean_distance + mean_height / 2,
-                    int(level),
+                    label,
                     ha='center',
                     va='center',
                     fontsize=8,
@@ -306,9 +335,9 @@ def main():
     # Extract subjectID from the fname and add it as a column
     df['subject'] = df['fname'].apply(lambda x: x.split('_')[0])
 
-    # Extract spinal level (cervical 1-8) and vertebral level (1-8)
-    df = df[((df['level_type'] == 'rootlets') & (df['spinal_level'].isin([1, 2, 3, 4, 5, 6, 7, 8]))) |
-        ((df['level_type'] == 'vertebrae') & (df['spinal_level'].isin([1, 2, 3, 4, 5, 6, 7, 8])))]
+    # Extract spinal level (1-8) and vertebral level (1-8)
+    df = df[((df['level_type'] == 'rootlets') & (df['spinal_level'].isin([2, 3, 4, 5, 6, 7, 8, 9]))) |
+        ((df['level_type'] == 'vertebrae') & (df['spinal_level'].isin([2, 3, 4, 5, 6, 7, 8, 9])))]
 
     if args.sex not in ['M', 'F']:
         sex = "all"
