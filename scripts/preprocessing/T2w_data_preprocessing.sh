@@ -116,8 +116,6 @@ get_vertebral_levels_labels(){
   VERT_LABEL_FILE="${OFOLDER}/${file_t2}_labels-vert.nii.gz"
   if [[ -e ${VERT_LABEL_FILE} ]]; then
     echo "Found vertebral labels!"
-    sct_label_utils -i ${T2_LABEL_SEG} -o ${DISC_LABEL_PATH} -vert-body 3,7 -o ${VERT_LABEL_FILE}
-
   else
     echo "Vertebral labels not found. Proceeding with vertebral level labeling."
     # Generate vertebral levels labels
@@ -145,8 +143,8 @@ extract_centerline_if_does_not_exist(){
 segment_rootlets_if_does_not_exist(){
   ROOTLETSEG_FILE="${file_t2}_label-rootlets_dseg"
   ROOTLETSEG_PATH="${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/${ROOTLETSEG_FILE}.nii.gz"
-  echo "Looking for rootlets segmentation: $SEG_PATH"
-  if [[ -e $SEG_PATH ]]; then
+  echo "Looking for rootlets segmentation: $ROOTLETSEG_PATH"
+  if [[ -e $ROOTLETSEG_PATH ]]; then
     echo "Found! Using rootlets segmentation."
     rsync -avzh "${PATH_DERIVATIVES}/labels/${SUBJECT}/anat/"
   else
