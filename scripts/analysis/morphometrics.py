@@ -16,11 +16,12 @@ from spinalcordtoolbox.centerline.core import ParamCenterline
 This script computes spinal cord morphometrics (e.g., CSA) from T2-weighted data.
 
 The script :
-1. Computes morphometrics using `sct_process_segmentation` per slice.
-2. Gets the z-slices corresponding to each disc label.
-3. Using the PMJ distances from the `sct_process_segmentation` output, it adds the PMJ distances for each disc label. 
-4. Interpolates PMJ distances for each Vertebral Level, and computes morphometrics at each interpolated PMJ distance 
+- Computes morphometrics using `sct_process_segmentation` per slice.
+- Gets the z-slices corresponding to each disc label.
+- Using the PMJ distances from the `sct_process_segmentation` output, it adds the PMJ distances for each disc label. 
+- Interpolates PMJ distances for each Vertebral Level, and computes morphometrics at each interpolated PMJ distance 
    (at 0.1 mm intervals between each Vertebral Level) using `sct_process_segmentation`
+- Normalizes the distances between the PMJ and the SC tip (PMJ = 0.0, SC tip = 1.0)
 
 Outputs :
 - {subject}_per_slice.csv : CSV files containing morphometrics per slice
@@ -351,7 +352,7 @@ def compute_interpolated_morphometrics(
     
     else:
         print("No new levels were computed.")
-        
+
         
 def PMJ_SCtip_normalization(per_slice_csv):
 
@@ -398,35 +399,35 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     labels_data = labels_img.get_fdata()
     max_level = int(np.max(labels_data))
 
-    # # Step 1 : Run sct_process_segmentation per slice to get the PMJ distances of each slice
-    # run_sct_process_segmentation_per_slice(
-    #     pmj=t2w_pmj_label,
-    #     t2w_seg_file=t2w_seg_file,
-    #     output_per_slice_csv=output_per_slice_csv,
-    #     centerline=centerline
-    #     )
+    # Step 1 : Run sct_process_segmentation per slice to get the PMJ distances of each slice
+    run_sct_process_segmentation_per_slice(
+        pmj=t2w_pmj_label,
+        t2w_seg_file=t2w_seg_file,
+        output_per_slice_csv=output_per_slice_csv,
+        centerline=centerline
+        )
     
-    # # Step 2 : Get the disc label slices and add the PMJ distances of each disc label
-    # get_disc_label_PMJ_dist(
-    #     subject, 
-    #     output_per_slice_csv,
-    #     t2w_seg_file, 
-    #     t2w_pmj_label,
-    #     t2w_disc_labels,
-    #     output_PMJ_dist_csv=output_PMJ_dist_csv)
+    # Step 2 : Get the disc label slices and add the PMJ distances of each disc label
+    get_disc_label_PMJ_dist(
+        subject, 
+        output_per_slice_csv,
+        t2w_seg_file, 
+        t2w_pmj_label,
+        t2w_disc_labels,
+        output_PMJ_dist_csv=output_PMJ_dist_csv)
 
-    # # Step 3 : Interpolate the PMJ distances and run sct_process_segmentation for all interpolated PMJ distances
-    # print(f"Computing interpolated morphometrics up to level {max_level} for subject {subject}")
-    # compute_interpolated_morphometrics(
-    #     subject=subject,
-    #     output_csv_path=output_csv_dir,
-    #     PMJ_distances_csv=output_PMJ_dist_csv,
-    #     pmj=t2w_pmj_label,
-    #     t2w_seg_file=t2w_seg_file,
-    #     participants_info=participants_info,
-    #     interp_PMJ_dist_csv=interp_PMJ_dist_csv,
-    #     final_csv_filename=final_csv
-    # )
+    # Step 3 : Interpolate the PMJ distances and run sct_process_segmentation for all interpolated PMJ distances
+    print(f"Computing interpolated morphometrics up to level {max_level} for subject {subject}")
+    compute_interpolated_morphometrics(
+        subject=subject,
+        output_csv_path=output_csv_dir,
+        PMJ_distances_csv=output_PMJ_dist_csv,
+        pmj=t2w_pmj_label,
+        t2w_seg_file=t2w_seg_file,
+        participants_info=participants_info,
+        interp_PMJ_dist_csv=interp_PMJ_dist_csv,
+        final_csv_filename=final_csv
+    )
 
     # Step 4 : Normalize the distances using spinal cord landmarks (PMJ, cervical and lumbar enlargments, tip of SC)
     print(f"Normalizing SC with PMJ and SC tip for: {subject}")
