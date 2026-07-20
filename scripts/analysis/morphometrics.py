@@ -7,6 +7,10 @@ from scipy.interpolate import interp1d
 import pandas as pd
 import spinalcordtoolbox.utils as sct
 from spinalcordtoolbox.scripts import sct_process_segmentation
+from spinalcordtoolbox.image import Image
+from spinalcordtoolbox.centerline.core import get_centerline
+from spinalcordtoolbox.types import Centerline
+from spinalcordtoolbox.centerline.core import ParamCenterline
 
 """
 This script computes spinal cord morphometrics (e.g., CSA) from T2-weighted data.
@@ -35,6 +39,33 @@ Author: Samuelle St-Onge
 
 """
 
+def get_max_pmj_distance(segmentation, pmj):
+    """
+    This function returns the maximum distance from the PMJ along the centerline (mm).
+
+    Inspired by : https://github.com/spinalcordtoolbox/spinalcordtoolbox/blob/master/spinalcordtoolbox/csa_pmj.py
+    """
+
+    # Get the segmentation and PMJ label images
+    im_seg = Image(segmentation).change_orientation("RPI")
+    im_pmj = Image(pmj).change_orientation("RPI")
+
+    # Add PMJ label to the segmentation
+    im_seg_with_pmj = im_seg.copy()
+    im_seg_with_pmj.data += im_pmj.data
+
+    # Centerline parameters
+    param_centerline = ParamCenterline()
+    param_centerline.algo_fitting = "linear"
+    param_centerline.smooth = 50
+    param_centerline.minmax = True
+
+    # Compute centerline
+    _, arr_ctl_phys, arr_ctl_der_phys, _ = get_centerline(im_seg_with_pmj,param_centerline,verbose=0,space="phys",)
+    ctl = Centerline(*arr_ctl_phys, *arr_ctl_der_phys)
+
+    return float(ctl.incremental_length_inverse[::-1][0])
+
 def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_csv, centerline):
 
     """
@@ -59,7 +90,7 @@ def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_c
         '-append', '1'
     ])
 
-def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, output_PMJ_dist_csv):
+def get_disc_label_PMJ_dist(subject, per_slice_csv, t2w_seg_file, t2w_pmj_label, vert_label_file, output_PMJ_dist_csv):
     """
     Get the PMJ distances of each disc label
 
@@ -71,7 +102,6 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
     Args:
         subject: participant ID 
         per_slice_csv: CSV file containing morphometrics per slice 
-        output_csv_dir: path to output csv files
         label_file: file containing disc labels
         output_PMJ_dist_csv : the output CSV file containing the list of disc labels with their corresponding slice indexes and PMJ distances
 
@@ -81,8 +111,8 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
     This function was inspired by : https://github.com/sct-pipeline/pmj-based-csa/blob/main/get_disc_slice.py 
     """
 
-    # Load label image
-    labels = nib.load(label_file)
+    # Load vertebral labels image
+    labels = nib.load(vert_label_file)
     data = labels.get_fdata()
 
     print("unique labels:", np.unique(data))
@@ -90,6 +120,19 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
     # Find axis corresponding to the S-I axis in the labels file
     axcodes = nib.aff2axcodes(labels.affine)
     si_axis = next(i for i, code in enumerate(axcodes) if code in ("S", "I"))
+    si_orientation = axcodes[si_axis] # Orientation of the SI axis
+    print(f"SI axis: {si_axis}, orientation: {si_orientation}")
+
+    indices = np.unique(data[data > 0])
+
+    if si_orientation == "I":
+        print(f'Orientation is I-S instead of S-I. Reversing the indices and PMJ distance.')
+        # Reverse the indices if the SI orientation is inferior to superior 
+        indices = indices[::-1]
+
+        # Reverse PMJ distances
+        max_distance = log["DistancePMJ"].max()
+        log["DistancePMJ"] = max_distance - log["DistancePMJ"]
 
     # Read per_slice_dr
     per_slice_df = pd.read_csv(per_slice_csv)
@@ -129,7 +172,6 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
 
     # Retrieve the last remaining row, corresponding to the last vertebral level included in the segmentation mask
     last_level = log.iloc[-1]["Level"]
-    last_level_PMJ_dist = log.iloc[-1]["DistancePMJ"]
     last_level_slice = log.iloc[-1]["Slice"]
 
     # Get the slice number corresponding to the next vertebral level
@@ -143,28 +185,29 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, output_csv_dir, label_file, 
         # Save the CSV without adding the SC-tip as the last row
         log.to_csv(output_PMJ_dist_csv, index=False)
         return
+    
+    else:
+        next_level_slice = int(coords_next_level[si_axis][0])
+        print(f"Next level slice: {next_level_slice}")
 
-    next_level_slice = int(coords_next_level[si_axis][0])
-    print(f"Next level slice: {next_level_slice}")
+        # Find the slice and PMJ distance corresponding to the tip of the SC mask (the last slice on the segmentation mask)
+        SC_tip_slice = (per_slice_df.loc[per_slice_df["MEAN(area)"].notna(), "Slice (I->S)"].min())
+        PMJ_SC_tip_dist = get_max_pmj_distance(t2w_seg_file, t2w_pmj_label) # maximum distance from the PMJ along the centerline 
+        print(f"Slice corresponding to SC tip: {SC_tip_slice}")
 
-    # Find the slice and PMJ distance corresponding to the tip of the SC mask (the last slice on the segmentation mask)
-    SC_tip_slice = (per_slice_df.loc[per_slice_df["MEAN(area)"].notna(), "Slice (I->S)"].min())
-    PMJ_SC_tip_dist = per_slice_df.loc[per_slice_df["Slice (I->S)"] == SC_tip_slice, "DistancePMJ"].values[0]
-    print(f"Slice corresponding to SC tip: {SC_tip_slice}")
+        # Find the location of the SC tip (in percentage) between the last vertebral level and the next one
+        ratio = (SC_tip_slice - last_level_slice) / (next_level_slice - last_level_slice)
+        SC_tip_vert_level = last_level + ratio
+        print("SC_tip_vert_level:", SC_tip_vert_level)
 
-    # Find the location of the SC tip (in percentage) between the last vertebral level and the next one
-    ratio = (SC_tip_slice - last_level_slice) / (next_level_slice - last_level_slice)
-    SC_tip_vert_level = last_level + ratio
-    print("SC_tip_vert_level:", SC_tip_vert_level)
-
-    # Append the row containing the next vert level
-    log.loc[len(log)] = {
-        "Subject": subject,
-        "Level": SC_tip_vert_level,
-        "Slice": SC_tip_slice,
-        "Slice (I->S)": SC_tip_slice,
-        "DistancePMJ": PMJ_SC_tip_dist,
-    }
+        # Append the row containing the next vert level
+        log.loc[len(log)] = {
+            "Subject": subject,
+            "Level": SC_tip_vert_level,
+            "Slice": SC_tip_slice,
+            "Slice (I->S)": SC_tip_slice,
+            "DistancePMJ": PMJ_SC_tip_dist,
+        }
 
     # Save csv 
     log.to_csv(output_PMJ_dist_csv, index=False)
@@ -308,6 +351,29 @@ def compute_interpolated_morphometrics(
     
     else:
         print("No new levels were computed.")
+        
+        
+def PMJ_SCtip_normalization(per_slice_csv):
+
+    perslice_df = pd.read_csv(per_slice_csv)
+
+    # Keep slices where CSA > 0 
+    SC_slices = perslice_df[perslice_df["MEAN(area)"] > 0]
+
+    # Get the first slice with CSA values (which corresponds to the tip of the SC)
+    slice_SC_tip = SC_slices["Slice (I->S)"].min()
+
+    print(f'Slice corresponding to SC tip : {slice_SC_tip}')
+
+    # Get the PMJ distance of the SC tip
+    dist_PMJ_SC_tip = perslice_df.loc[perslice_df["Slice (I->S)"] == slice_SC_tip, "DistancePMJ"].values[0]
+
+    # Normalize distances between PMJ and the SC tip
+    perslice_df["Normalized_PMJ_SCtip"] = perslice_df["DistancePMJ"] / dist_PMJ_SC_tip
+
+    # Add the "NormalizedDistance" column to the per_slice_csv
+    perslice_df.to_csv(per_slice_csv, index=False)
+    print(f"Normalized morphometrics results saved to:\n{per_slice_csv}")
 
 
 def main(subject, data_path, path_output, subject_dir, file_t2):
@@ -332,34 +398,39 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     labels_data = labels_img.get_fdata()
     max_level = int(np.max(labels_data))
 
-    # Step 1 : Run sct_process_segmentation per slice to get the PMJ distances of each slice
-    run_sct_process_segmentation_per_slice(
-        pmj=t2w_pmj_label,
-        t2w_seg_file=t2w_seg_file,
-        output_per_slice_csv=output_per_slice_csv,
-        centerline=centerline
-        )
+    # # Step 1 : Run sct_process_segmentation per slice to get the PMJ distances of each slice
+    # run_sct_process_segmentation_per_slice(
+    #     pmj=t2w_pmj_label,
+    #     t2w_seg_file=t2w_seg_file,
+    #     output_per_slice_csv=output_per_slice_csv,
+    #     centerline=centerline
+    #     )
     
-    # Step 2 : Get the disc label slices and add the PMJ distances of each disc label
-    get_disc_label_PMJ_dist(
-        subject, 
-        output_per_slice_csv,
-        output_csv_dir, 
-        t2w_disc_labels,
-        output_PMJ_dist_csv=output_PMJ_dist_csv)
-    
-    # Step 3 : Interpolate the PMJ distances and run sct_process_segmentation for all interpolated PMJ distances
-    print(f"Computing interpolated morphometrics up to level {max_level} for subject {subject}")
-    compute_interpolated_morphometrics(
-        subject=subject,
-        output_csv_path=output_csv_dir,
-        PMJ_distances_csv=output_PMJ_dist_csv,
-        pmj=t2w_pmj_label,
-        t2w_seg_file=t2w_seg_file,
-        participants_info=participants_info,
-        interp_PMJ_dist_csv=interp_PMJ_dist_csv,
-        final_csv_filename=final_csv
-    )
+    # # Step 2 : Get the disc label slices and add the PMJ distances of each disc label
+    # get_disc_label_PMJ_dist(
+    #     subject, 
+    #     output_per_slice_csv,
+    #     t2w_seg_file, 
+    #     t2w_pmj_label,
+    #     t2w_disc_labels,
+    #     output_PMJ_dist_csv=output_PMJ_dist_csv)
+
+    # # Step 3 : Interpolate the PMJ distances and run sct_process_segmentation for all interpolated PMJ distances
+    # print(f"Computing interpolated morphometrics up to level {max_level} for subject {subject}")
+    # compute_interpolated_morphometrics(
+    #     subject=subject,
+    #     output_csv_path=output_csv_dir,
+    #     PMJ_distances_csv=output_PMJ_dist_csv,
+    #     pmj=t2w_pmj_label,
+    #     t2w_seg_file=t2w_seg_file,
+    #     participants_info=participants_info,
+    #     interp_PMJ_dist_csv=interp_PMJ_dist_csv,
+    #     final_csv_filename=final_csv
+    # )
+
+    # Step 4 : Normalize the distances using spinal cord landmarks (PMJ, cervical and lumbar enlargments, tip of SC)
+    print(f"Normalizing SC with PMJ and SC tip for: {subject}")
+    PMJ_SCtip_normalization(output_per_slice_csv) # Normalize with PMJ and SC tip only
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run morphometric extraction for one subject")
