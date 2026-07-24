@@ -67,7 +67,7 @@ def get_max_pmj_distance(segmentation, pmj):
 
     return float(ctl.incremental_length_inverse[::-1][0])
 
-def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_csv, centerline):
+def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_csv, centerline):
 
     """
     This function computes sct_process_segmentation to get the PMJ distances of each slice
@@ -87,7 +87,31 @@ def run_sct_process_segmentation_per_slice(pmj, t2w_seg_file, output_per_slice_c
         '-pmj', pmj,
         '-perslice', '1',
         '-angle-corr-centerline', centerline,
-        '-o', output_per_slice_csv,
+        '-o', output_csv,
+        '-append', '1'
+    ])
+
+def run_sct_process_segmentation_per_vertlevel(t2w_seg_file, disc_labels_file, output_csv, centerline):
+
+    """
+    This function computes sct_process_segmentation per vertebral level, for vertebral levels C1 to L1.
+
+    Args:
+        t2w_seg_file: Path to the T2w SC segmentation file
+        output_per_slice_csv: the output CSV file containing morphometrics per slice
+
+    Output:
+        {subject}_per_slice.csv : CSV files containing morphometrics per slice
+
+    """
+
+    sct_process_segmentation.main([
+        '-i', t2w_seg_file,
+        '-perlevel', '1',
+        '-vert', '1:20',
+        '-discfile', disc_labels_file,
+        '-angle-corr-centerline', centerline,
+        '-o', output_csv,
         '-append', '1'
     ])
 
@@ -390,6 +414,7 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     output_csv_dir = os.path.join("results/tables/morphometrics")
     os.makedirs(output_csv_dir, exist_ok=True) # Create a folder named "morphometrics" inside the output results folder
     output_per_slice_csv = os.path.join(output_csv_dir, f"{subject}_per_slice.csv")
+    output_per_vertlevel_csv = os.path.join(output_csv_dir, f"{subject}_per_vertlevel.csv")
     output_PMJ_dist_csv = os.path.join(output_csv_dir, f"{subject}_PMJ_dist.csv")
     interp_PMJ_dist_csv = os.path.join(output_csv_dir, f"{subject}_PMJ_dist_interp.csv")
     final_csv = os.path.join(output_csv_dir, f"{subject}_interpolated_morphometrics.csv")
@@ -403,10 +428,18 @@ def main(subject, data_path, path_output, subject_dir, file_t2):
     run_sct_process_segmentation_per_slice(
         pmj=t2w_pmj_label,
         t2w_seg_file=t2w_seg_file,
-        output_per_slice_csv=output_per_slice_csv,
+        output_csv=output_per_slice_csv,
         centerline=centerline
         )
     
+    # Optional : run sct_process_segmentation per vertebral level as well
+    run_sct_process_segmentation_per_vertlevel(
+        t2w_seg_file = t2w_seg_file,
+        disc_labels_file = t2w_disc_labels,
+        output_csv = output_per_vertlevel_csv,
+        centerline = centerline
+        )
+        
     # Step 2 : Get the disc label slices and add the PMJ distances of each disc label
     get_disc_label_PMJ_dist(
         subject, 
