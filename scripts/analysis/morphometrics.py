@@ -148,17 +148,6 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, t2w_seg_file, t2w_pmj_label,
     si_orientation = axcodes[si_axis] # Orientation of the SI axis
     print(f"SI axis: {si_axis}, orientation: {si_orientation}")
 
-    indices = np.unique(data[data > 0])
-
-    if si_orientation == "I":
-        print(f'Orientation is I-S instead of S-I. Reversing the indices and PMJ distance.')
-        # Reverse the indices if the SI orientation is inferior to superior 
-        indices = indices[::-1]
-
-        # Reverse PMJ distances
-        max_distance = log["DistancePMJ"].max()
-        log["DistancePMJ"] = max_distance - log["DistancePMJ"]
-
     # Read per_slice_dr
     per_slice_df = pd.read_csv(per_slice_csv)
 
@@ -175,15 +164,15 @@ def get_disc_label_PMJ_dist(subject, per_slice_csv, t2w_seg_file, t2w_pmj_label,
         rows.append({
             "Subject": subject,
             "Level": int(level),
-            "Slice": int(si_coords)
+            "Slice": int(si_coords[0])
         })
-
-    log = pd.DataFrame(rows)
-    log = log.sort_values("Level").reset_index(drop=True)
 
     # Merge PMJ distances with slices 
     slice_col = "Slice (I->S)"
     pmj_col = "DistancePMJ"
+
+    log = pd.DataFrame(rows)
+    log = log.sort_values("Level").reset_index(drop=True)
 
     log = log.merge(
         per_slice_df[[slice_col, pmj_col]],
