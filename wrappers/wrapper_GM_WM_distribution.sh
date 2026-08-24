@@ -45,6 +45,4 @@ fi
 python "scripts/analysis/GM_WM_distribution.py" \
     --subject "${SUBJECT}" \
     --data-path "${PATH_DATA}" \
-    --path-output "${PATH_RESULTS}" \
-    --subject-dir "${SUBJECT_DIR}" \
     --file-t2star "${T2star_FILE}" \
