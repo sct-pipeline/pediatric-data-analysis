@@ -285,43 +285,7 @@ def main(subject, data_path, subject_dir, file_t2, rootlets_model_dir):
         )
 
     else:
-        print(f"Rootlets already processed for subject {subject}. Going straight to generating figure.")
-    
-    # Generate figure for all subjects (male + female)
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-participants", participants_tsv
-    ], check=True)
-
-    # Generate figure for female subjects only
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-participants", participants_tsv,
-        '-sex', 'F'
-    ], check=True)
-
-    # Generate figure for male subjects only 
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "generate_figure_rootlets_and_vertebral_spinal_levels.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-participants", participants_tsv,
-        '-sex', 'M'
-    ], check=True)
-
-    # Generate figure illustrating spinal and vertebral levels distribution 
-    subprocess.run([
-        python_executable,
-        os.path.join(f'results/plots/', "get_distributions_and_sizes_vertebral_spinal_levels.py"),
-        "-i", 'results/tables/rootlets', # path to pmj distance csv files
-        "-o", 'results/figures', # path to pmj distance csv files
-        "-participants", participants_tsv,
-        '-sex', 'M'
-    ], check=True)
+        print(f"Rootlets already processed for subject {subject}.")
 
     # Create a label file containing single voxel points at the start and end of each spinal level
     create_single_voxel_point_labels(subject, data_path, subject_dir, t2w, t2w_centerline, file_t2, rootlets_csv_folder='results/tables/rootlets')
