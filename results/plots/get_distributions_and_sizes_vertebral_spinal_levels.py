@@ -64,7 +64,7 @@ def process_data(df, level_type, normalised):
         df_filtered["mean_distance_height_pmj"] = df_filtered[["distance_from_pmj_start", "distance_from_pmj_end"]].mean(axis=1)
 
     # make table with positions of midpoint from PMJ for each level
-    df_pivot = df_filtered.pivot_table(index=["participant_id", "age"], columns="spinal_level", values="mean_distance_height_pmj", aggfunc="mean")
+    df_pivot = df_filtered.pivot_table(index=["participant_id", "age", "height"], columns="spinal_level", values="mean_distance_height_pmj", aggfunc="mean")
     df_pivot.reset_index(inplace=True)
 
     # make table with mean and std of height for each segment
@@ -154,45 +154,212 @@ def compute_mean_std_for_each_level(df_rootlets_pivot, df_vertebrae_pivot, outpu
 
     return mean_rootlets, std_rootlets, mean_vertebrae, std_vertebrae
 
-def compute_rmse(df_rootlets_pivot, df_vertebrae_pivot, shifted):
+
+def compute_rmse(df_rootlets_pivot, df_vertebrae_pivot, output_dir):
     """
     Function to compute the RMSE between the rootlets and vertebrae midpoints for each spinal and vertebral level.
     :param df_rootlets_pivot: dataframe with distances from PMJ for spinal levels
     :param df_vertebrae_pivot: dataframe with distances from PMJ for vertebral levels
     return rmse
     """
-    shifted_label = "shifted" if shifted else "not-shifted"
-    rmse_shifted = []
-    rmse_not_shifted = []
 
-    # Remove first column (subject) from the pivot tables
-    rootlets = df_rootlets_pivot.iloc[:, 1:]
-    vertebrae = df_vertebrae_pivot.iloc[:, 1:]
+    rmse_results = []
 
-    # Select the columns for (non)shifted variant of comparison
-    if shifted:
-        rootlets = rootlets.iloc[:, 1:]  # starts from C3 spinal level
-    else:
-        rootlets = rootlets.iloc[:, :-1]  # starts from C2 spinal level
+    vertebral_levels = [
+        "Vertebral level C2",
+        "Vertebral level C3",
+        "Vertebral level C4",
+        "Vertebral level C5",
+        "Vertebral level C6",
+        "Vertebral level C7",
+        "Vertebral level T1"
+    ]
 
-    # Compute RMSE for each spinal and vertebral level
-    for i, col in enumerate(vertebrae.columns):
-        rmse = np.sqrt(np.mean((vertebrae[col] - rootlets.iloc[:, i]) ** 2))
-        print(f"RMSE between {col} and {rootlets.columns[i]}: {rmse:.4f}")
-        if shifted:
-            rmse_shifted.append((vertebrae[col] - rootlets.iloc[:, i])**2)
-        else:
-            rmse_not_shifted.append((vertebrae[col] - rootlets.iloc[:, i])**2)
+    spinal_levels = [
+        "Spinal level C3",
+        "Spinal level C4",
+        "Spinal level C5",
+        "Spinal level C6",
+        "Spinal level C7",
+        "Spinal level C8",
+        "Spinal level T1"
+    ]
 
-    # Compute overall RMSE
-    if shifted:
-        rmse_shifted = np.concatenate(rmse_shifted)
-        rmse_overall_shifted = np.sqrt(np.sum(rmse_shifted)/len(rmse_shifted))
-    else:
-        rmse_not_shifted = np.concatenate(rmse_not_shifted)
-        rmse_overall_not_shifted = np.sqrt(np.sum(rmse_not_shifted)/len(rmse_not_shifted))
+    # Loop through each age
+    for age in sorted(df_rootlets_pivot["age"].dropna().unique()):
 
-    print(f"Overall RMSE for {shifted_label}: {rmse_overall_shifted:.4f}" if shifted else f"Overall RMSE for {shifted_label}: {rmse_overall_not_shifted:.4f}")
+        # Filter by age
+        rootlets = df_rootlets_pivot[df_rootlets_pivot["age"] == age].copy()
+        vertebrae = df_vertebrae_pivot[df_vertebrae_pivot["age"] == age].copy()
+
+        # Keep only the levels contained in the lists above
+        rootlets = rootlets[spinal_levels].apply(pd.to_numeric, errors="coerce")
+        vertebrae = vertebrae[vertebral_levels].apply(pd.to_numeric, errors="coerce")
+
+        # Loop through each vertebral-spinal pair
+        for vertebral_col, spinal_col in zip(vertebral_levels, spinal_levels):
+
+            # Difference between corresponding midpoints
+            differences = (vertebrae[vertebral_col] - rootlets[spinal_col])
+
+            # RMSE for this pair at this age
+            rmse = np.sqrt(np.nanmean(differences ** 2))
+
+            # Save the RMSE in a dictionnary
+            rmse_results.append({
+                "age": age,
+                "vertebral_level": vertebral_col,
+                "spinal_level": spinal_col,
+                "RMSE": rmse
+            })
+
+            print(
+                f"Age {age}: "
+                f"{vertebral_col} vs {spinal_col}: "
+                f"RMSE = {rmse:.4f}"
+            )
+
+    # Convert all results to a dataframe
+    rmse_df = pd.DataFrame(rmse_results)
+
+    # Round at 2 decimals
+    rmse_df["RMSE"] = rmse_df["RMSE"].round(2)
+
+    # Save to csv
+    csv_file = f"{output_dir}/rmse_by_age_and_level.csv"
+    rmse_df.to_csv(csv_file, index=False)
+
+    print("\nRMSE by age and vertebral-spinal pair:")
+    print(rmse_df)
+
+    return rmse_df
+
+def compute_distances(df_rootlets_pivot, df_vertebrae_pivot, output_dir):
+    """
+    Compute the distance (difference) between corresponding spinal and vertebral level midpoints for each participant.
+    """
+
+    distance_results = []
+
+    vertebral_levels = [
+        "Vertebral level C2",
+        "Vertebral level C3",
+        "Vertebral level C4",
+        "Vertebral level C5",
+        "Vertebral level C6",
+        "Vertebral level C7",
+        "Vertebral level T1"
+    ]
+
+    spinal_levels = [
+        "Spinal level C3",
+        "Spinal level C4",
+        "Spinal level C5",
+        "Spinal level C6",
+        "Spinal level C7",
+        "Spinal level C8",
+        "Spinal level T1"
+    ]
+
+    # Merge the two dataframes using participant_id
+    merged = pd.merge(
+        df_rootlets_pivot,
+        df_vertebrae_pivot,
+        on=["participant_id", "age", "height"],
+        how="inner",
+        suffixes=("_rootlets", "_vertebrae")
+    )
+
+    # Loop through each participant
+    for _, row in merged.iterrows():
+
+        # Loop through corresponding vertebral/spinal pairs
+        for vertebral_col, spinal_col in zip(vertebral_levels, spinal_levels):
+
+            vertebral_distance = pd.to_numeric(row[vertebral_col], errors="coerce")
+            spinal_distance = pd.to_numeric(row[spinal_col], errors="coerce")
+
+            # Difference between the two midpoints
+            distance = vertebral_distance - spinal_distance
+
+            distance_results.append({
+                "participant_id": row["participant_id"],
+                "age": row["age"],
+                "height": row["height"],
+                "vertebral_level": vertebral_col,
+                "spinal_level": spinal_col,
+                "midpoint_distance": distance
+            })
+
+    # Convert results to dataframe
+    distance_df = pd.DataFrame(distance_results)
+    distance_df["midpoint_distance"] = distance_df["midpoint_distance"].round(2)
+
+    # Save to CSV
+    csv_file = f"{output_dir}/distance_by_participant_and_level.csv"
+    distance_df.to_csv(csv_file, index=False)
+
+    print("\nDistance between vertebral and spinal levels:")
+    print(distance_df)
+
+    return distance_df
+
+
+def compute_level_proportions(df, level_type, output_dir):
+
+    results = []
+
+    if level_type == 'rootlets':
+        df = df[df["level_type"] == 'rootlets']
+        df = df[df["spinal_level"] <= 8].copy() # Keep only cervical levels
+
+    if level_type == 'vertebrae':
+        df = df[df["level_type"] == 'vertebrae']
+        df = df[df["spinal_level"] <= 7].copy() # Keep only cervical levels
+
+    for participant in df["participant_id"].unique():
+
+        df_sub = df[df["participant_id"] == participant].copy()
+
+        # total cervical length
+        total_length = df_sub["height"].sum()
+
+        # proportion of each level
+        df_sub["proportion"] = df_sub["height"] / total_length
+
+        for _, row in df_sub.iterrows():
+            results.append({
+                "participant_id": participant,
+                "age": row["age"],
+                "level": row["spinal_level"],
+                "height": row["height"],
+                "total_cervical_length": total_length,
+                "proportion": row["proportion"]
+            })
+
+    # Save to CSV
+    results = pd.DataFrame(results)
+    csv_file = f"{output_dir}/spinal_level_proportions_{level_type}.csv"
+    results.to_csv(csv_file, index=False)
+
+    # Get the average proportion per age, per level
+    table = (
+        results.pivot_table(
+            index="level",
+            columns="age",
+            values="proportion",
+            aggfunc="mean"
+        )
+    )
+
+    print(f'Table for {level_type} : {table}')
+
+    # Save to csv : 
+    results = pd.DataFrame(table)
+    csv_file = f"{output_dir}/mean_spinal_level_proportions_{level_type}.csv"
+    results.to_csv(csv_file, index=False)
+
+    return results
 
 
 def plot_distributions_per_age(df_rootlets, df_vertebrae, output_path, normalised, levels_to_plot=None):
@@ -313,6 +480,7 @@ def main():
     df_participants = pd.read_csv(args.participants, sep='\t')
     participants_age = df_participants[['participant_id', 'age']]
     participants_sex = df_participants[['participant_id', 'sex']]
+    participants_height = df_participants[['participant_id', 'height']]
 
     # Get all the CSV files in the directory generated by the 02a_rootlets_to_spinal_levels.py script
     csv_files = glob.glob(os.path.join(dir_path, '**', '*pmj_distance_*[vertebral_disc|rootlets].csv'), recursive=True)
@@ -355,20 +523,32 @@ def main():
             return None
         return matching['sex'].values[0]
 
+    # Function to get the height of the subjects from the participants.tsv file 
+    def get_height(x):
+        filename = os.path.basename(x)  
+        participant_id = filename.split('_')[0] 
+        participant_id = participant_id.strip()
+        matching = participants_height[participants_height['participant_id'] == participant_id]
+        if matching.empty:
+            print(f"No matching 'height' value for {participant_id} from filename {filename}")
+            return None
+        return matching['height'].values[0]
+
     # Get the age of the subjects
     df['age'] = df['fname'].apply(get_age)
 
+    # Get the height of the subjects
+    df['height'] = df['fname'].apply(get_height)
+
     # Extract rootlets or vertebrae level type from the fname and add it as a column
-    df['level_type'] = df['fname'].apply(
-        lambda x: 'rootlets' if 'label-rootlets' in x else 'vertebrae'
-    )
+    df['level_type'] = df['fname'].apply(lambda x: 'rootlets' if 'label-rootlets' in x else 'vertebrae')
 
     # Extract subjectID from the fname and add it as a column
     df['participant_id'] = df['fname'].apply(lambda x: x.split('_')[0])
 
-    # Extract spinal level (cervical 1-8) and vertebral level (1-8)
-    df = df[((df['level_type'] == 'rootlets') & (df['spinal_level'].isin([1, 2, 3, 4, 5, 6, 7, 8]))) |
-        ((df['level_type'] == 'vertebrae') & (df['spinal_level'].isin([1, 2, 3, 4, 5, 6, 7, 8])))]
+    # Extract spinal level (cervical 3-9) and vertebral level (2-8)
+    df = df[((df['level_type'] == 'rootlets') & (df['spinal_level'].isin([3, 4, 5, 6, 7, 8, 9]))) |
+        ((df['level_type'] == 'vertebrae') & (df['spinal_level'].isin([2, 3, 4, 5, 6, 7, 8])))]
 
     if args.sex not in ['M', 'F']:
         sex = "all"
@@ -386,10 +566,6 @@ def main():
     df_rootlets_pivot, df_mean_std_height_rootlets = process_data(df, "rootlets", normalised)
     df_vertebrae_pivot, df_mean_std_height_vertebrae = process_data(df, "vertebrae", normalised)
 
-    # Check normality of the distributions
-    check_normality(df_rootlets_pivot)
-    check_normality(df_vertebrae_pivot)
-
     # Plot the distributions of the distances from PMJ for spinal and vertebral levels
     levels_to_plot = [2, 3, 4, 5, 6, 7, 8]
     plot_distributions_per_age(df_rootlets_pivot, df_vertebrae_pivot, output_path, normalised, levels_to_plot)
@@ -397,10 +573,17 @@ def main():
     # Compute mean and standard deviation for each spinal and vertebral level
     compute_mean_std_for_each_level(df_mean_std_height_rootlets, df_mean_std_height_vertebrae, output_path)
 
-    # Compute RMSE between rootlets and vertebrae midpoints for each spinal and vertebral level
-    compute_rmse(df_rootlets_pivot, df_vertebrae_pivot, shifted=False)
-    compute_rmse(df_rootlets_pivot, df_vertebrae_pivot, shifted=True)
+    # Compute distances between midpoints (for each participant, for each pair of spinal/vertebral levels)
+    compute_distances(df_rootlets_pivot, df_vertebrae_pivot, output_dir='results/tables/rootlets')
 
+    # Compute RMSE between rootlets and vertebrae midpoints for each spinal and vertebral level
+    compute_rmse(df_rootlets_pivot, df_vertebrae_pivot, output_dir='results/tables/rootlets')
+
+    # Compute proportions for spinal levels
+    compute_level_proportions(df, level_type = 'rootlets', output_dir='results/tables/rootlets/')
+
+    # Compute proportions for vertebral levels
+    compute_level_proportions(df, level_type = 'vertebrae', output_dir='results/tables/rootlets/')
 
 if __name__ == "__main__":
     main()
